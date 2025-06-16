@@ -9,6 +9,7 @@ import AdminNavbar from '@/components/AdminNavbar';
 import { deleteObject, ref } from 'firebase/storage';
 import { storage } from '@/utils/firebase';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface CarData {
   id: string;
@@ -115,14 +116,11 @@ export default function ListCarsPage() {
       <AdminNavbar />
       <div className="container py-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h1 className="mb-0">Listă anunțuri</h1>
-          <button 
-            onClick={() => router.push('/admin/add')}
-            className="btn btn-primary"
-          >
+          <h1 className="h3 mb-0 text-light">Listă mașini</h1>
+          <Link href="/admin/add" className="btn btn-primary">
             <i className="bi bi-plus-lg me-2"></i>
-            Adaugă anunț nou
-          </button>
+            Adaugă mașină
+          </Link>
         </div>
 
         {success && (
@@ -141,57 +139,59 @@ export default function ListCarsPage() {
 
         {loading ? (
           <div className="text-center py-5">
-            <div className="spinner-border text-primary" role="status">
+            <div className="spinner-border text-light" role="status">
               <span className="visually-hidden">Se încarcă...</span>
             </div>
           </div>
+        ) : error ? (
+          <div className="alert alert-danger" role="alert">
+            {error}
+          </div>
         ) : cars.length === 0 ? (
-          <div className="alert alert-info">
-            <i className="bi bi-info-circle me-2"></i>
-            Nu există anunțuri adăugate.
+          <div className="text-center py-5">
+            <p className="text-light mb-4">Nu există mașini în baza de date.</p>
+            <Link href="/admin/add" className="btn btn-primary">
+              <i className="bi bi-plus-lg me-2"></i>
+              Adaugă prima mașină
+            </Link>
           </div>
         ) : (
           <div className="row g-4">
             {cars.map(car => (
-              <div className="col-md-6 col-lg-4" key={car.id}>
-                <div className="card h-100 shadow-sm">
-                  {(car.coverImage || (car.images && car.images.length > 0)) && (
-                    <img 
-                      src={car.coverImage || car.images![0]} 
-                      className="card-img-top" 
+              <div key={car.id} className="col-md-6 col-lg-4">
+                <div className="card h-100" style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)' }}>
+                  <div className="position-relative">
+                    <img
+                      src={car.coverImage || (car.images && car.images[0])}
                       alt={`${car.marca} ${car.model}`}
-                      style={{
-                        objectFit: 'cover',
-                        height: '200px',
-                        borderRadius: '8px 8px 0 0'
-                      }} 
+                      className="car-image"
                     />
-                  )}
+                  </div>
                   <div className="card-body">
-                    <h5 className="card-title fw-bold mb-3">
+                    <h5 className="card-title fw-bold mb-3 text-light">
                       {car.marca} {car.model}
-                      <span className="text-muted ms-2">{car.an}</span>
+                      <span className="text-light opacity-75 ms-2">{car.an}</span>
                     </h5>
                     
                     <div className="mb-3">
                       <div className="d-flex justify-content-between mb-2">
-                        <span className="text-muted">Preț:</span>
-                        <span className="fw-bold text-primary">{formatNumber(car.pret)} €</span>
+                        <span className="text-light opacity-75">Preț:</span>
+                        <span className="fw-bold text-danger">{formatNumber(car.pret)} €</span>
                       </div>
                       <div className="d-flex justify-content-between mb-2">
-                        <span className="text-muted">Kilometraj:</span>
-                        <span>{formatNumber(car.km)} km</span>
+                        <span className="text-light opacity-75">Kilometraj:</span>
+                        <span className="text-light">{formatNumber(car.km)} km</span>
                       </div>
                       <div className="d-flex justify-content-between">
-                        <span className="text-muted">Combustibil:</span>
-                        <span>{car.combustibil}</span>
+                        <span className="text-light opacity-75">Combustibil:</span>
+                        <span className="text-light">{car.combustibil}</span>
                       </div>
                     </div>
 
                     <div className="d-flex gap-2 mt-3">
                       <button 
                         onClick={() => handleEdit(car.id)} 
-                        className="btn btn-outline-primary flex-grow-1"
+                        className="btn btn-outline-danger flex-grow-1"
                       >
                         <i className="bi bi-pencil me-2"></i>
                         Editează

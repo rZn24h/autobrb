@@ -31,6 +31,11 @@ export default function CarCard({ car }: CarCardProps) {
     <Link 
       href={`/cars/${car.id}`} 
       className="text-decoration-none card h-100 border-0 shadow-sm hover-card"
+      style={{
+        backgroundColor: 'var(--gray-800)',
+        border: '1px solid var(--gray-700)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+      }}
     >
       {/* Car Image */}
       <div className="position-relative">
@@ -51,45 +56,38 @@ export default function CarCard({ car }: CarCardProps) {
             style={{
               fontSize: '1.1rem',
               fontWeight: 600,
-              color: '#1a1a1a'
+              color: 'var(--light-color)'
             }}
           >
             {car.marca} {car.model}
           </h3>
-          <span className="text-muted">{car.an}</span>
+          <span className="text-light">{car.an}</span>
         </div>
 
         {/* Specs */}
         <div className="specs-grid mb-3">
           <div className="spec-item">
-            <FaRoad className="spec-icon" />
-            <span className="spec-text">{formattedKm} km</span>
+            <i className="bi bi-speedometer2 spec-icon"></i>
+            <span className="spec-text text-light">{formattedKm} km</span>
           </div>
           <div className="spec-item">
-            <FaGasPump className="spec-icon" />
-            <span className="spec-text">{car.combustibil}</span>
+            <i className="bi bi-fuel-pump spec-icon"></i>
+            <span className="spec-text text-light">{car.combustibil}</span>
           </div>
           <div className="spec-item">
-            <FaCar className="spec-icon" />
-            <span className="spec-text">{car.capacitate} cm³</span>
+            <i className="bi bi-gear spec-icon"></i>
+            <span className="spec-text text-light">{car.transmisie}</span>
           </div>
-          {car.putere && (
-            <div className="spec-item">
-              <FaTachometerAlt className="spec-icon" />
-              <span className="spec-text">{car.putere} CP</span>
-            </div>
-          )}
           <div className="spec-item">
-            <FaCog className="spec-icon" />
-            <span className="spec-text">{car.transmisie}</span>
+            <i className="bi bi-droplet spec-icon"></i>
+            <span className="spec-text text-light">{car.capacitate} cm³</span>
           </div>
         </div>
 
         {/* Price */}
-        <div className="mt-auto">
-          <div className="price-tag">
-            {formattedPrice} €
-          </div>
+        <div className="d-flex justify-content-between align-items-center">
+          <span className="text-light">Preț:</span>
+          <span className="price-tag text-light">{formattedPrice} €</span>
         </div>
       </div>
     </Link>

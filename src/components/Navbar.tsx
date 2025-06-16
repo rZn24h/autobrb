@@ -14,12 +14,12 @@ const Navbar: React.FC = () => {
   const { isAdmin, loading: adminLoading } = useAdmin();
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
+    <nav className="navbar navbar-expand-lg fixed-top shadow-sm" style={{ backgroundColor: 'var(--gray-900)' }}>
       <div className="container">
         {/* Logo */}
         <Link href="/" className="navbar-brand d-flex align-items-center">
           {loading ? (
-            <div className="spinner-border spinner-border-sm" role="status">
+            <div className="spinner-border spinner-border-sm text-light" role="status">
               <span className="visually-hidden">Se încarcă...</span>
             </div>
           ) : config?.logoUrl ? (
@@ -34,7 +34,7 @@ const Navbar: React.FC = () => {
               className="d-inline-block align-top"
             />
           ) : (
-            <div className="text-primary">
+            <div className="text-danger">
               <i className="bi bi-car-front fs-3"></i>
             </div>
           )}
@@ -49,6 +49,7 @@ const Navbar: React.FC = () => {
           aria-controls="navbarNav"
           aria-expanded="false"
           aria-label="Toggle navigation"
+          style={{ color: '#ffffff' }}
         >
           <span className="navbar-toggler-icon"></span>
         </button>
@@ -59,7 +60,8 @@ const Navbar: React.FC = () => {
             <li className="nav-item">
               <Link 
                 href="/" 
-                className={`nav-link px-3 py-2 ${pathname === '/' ? 'active fw-bold' : ''}`}
+                className={`nav-link px-3 py-2 ${pathname === '/' ? 'active fw-bold text-danger' : 'text-light'}`}
+                style={{ transition: 'color 0.3s ease' }}
               >
                 Acasă
               </Link>
@@ -67,7 +69,8 @@ const Navbar: React.FC = () => {
             <li className="nav-item">
               <Link 
                 href="/contact" 
-                className={`nav-link px-3 py-2 ${pathname === '/contact' ? 'active fw-bold' : ''}`}
+                className={`nav-link px-3 py-2 ${pathname === '/contact' ? 'active fw-bold text-danger' : 'text-light'}`}
+                style={{ transition: 'color 0.3s ease' }}
               >
                 Contact
               </Link>
@@ -77,8 +80,9 @@ const Navbar: React.FC = () => {
                 <Link 
                   href="/admin/dashboard" 
                   className={`nav-link px-3 py-2 d-flex align-items-center ${
-                    pathname.startsWith('/admin') ? 'active fw-bold' : ''
+                    pathname.startsWith('/admin') ? 'active fw-bold text-danger' : 'text-light'
                   }`}
+                  style={{ transition: 'color 0.3s ease' }}
                 >
                   <i className="bi bi-gear-fill me-2"></i>
                   <span>Admin</span>

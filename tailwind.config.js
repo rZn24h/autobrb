@@ -8,17 +8,27 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#29339b',    // Egyptian Blue
-        secondary: '#74a4bc',  // Air Superiority Blue
-        accent: '#ff3a20',     // Scarlet
-        light: '#b6d6cc',      // Ash Gray
-        bg: '#f9f9f9',
-        text: '#1a1a1a',
+        primary: '#dc3545',    // Red
+        secondary: '#6c757d',  // Gray
+        accent: '#dc3545',     // Red
+        light: '#f8f9fa',      // Light Gray
+        dark: '#1a1a1a',       // Dark Gray
+        gray: {
+          100: '#f8f9fa',
+          200: '#e9ecef',
+          300: '#dee2e6',
+          400: '#ced4da',
+          500: '#adb5bd',
+          600: '#6c757d',
+          700: '#495057',
+          800: '#343a40',
+          900: '#212529',
+        },
       },
       boxShadow: {
-        'sm': '0 2px 4px rgba(0,0,0,0.05)',
-        'md': '0 4px 6px rgba(0,0,0,0.1)',
-        'lg': '0 10px 15px rgba(0,0,0,0.1)',
+        'sm': '0 2px 4px rgba(0,0,0,0.2)',
+        'md': '0 4px 6px rgba(0,0,0,0.3)',
+        'lg': '0 10px 15px rgba(0,0,0,0.4)',
       },
     },
   },

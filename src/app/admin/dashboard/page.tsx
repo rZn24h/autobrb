@@ -34,13 +34,13 @@ export default function AdminDashboardPage() {
         <div className="row g-4">
           {menu.map(item => (
             <div className="col-md-6 col-lg-4" key={item.route}>
-              <div className="card h-100 shadow-sm">
+              <div className="card h-100 shadow-sm" style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)' }}>
                 <div className="card-body">
                   <div className="d-flex align-items-center mb-3">
                     <i className={`bi ${item.icon} fs-2 me-3 text-primary`}></i>
-                    <h5 className="card-title mb-0">{item.label}</h5>
+                    <h5 className="card-title mb-0 text-light">{item.label}</h5>
                   </div>
-                  <p className="card-text text-muted">{item.desc}</p>
+                  <p className="card-text text-light" style={{ color: 'var(--gray-300)' }}>{item.desc}</p>
                   <Link 
                     href={item.route} 
                     className="btn btn-primary w-100"

@@ -19,7 +19,11 @@ export default function ContactPage() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   return (
@@ -31,38 +35,38 @@ export default function ContactPage() {
           <div className="row g-4">
             {/* Contact Information */}
             <div className="col-md-6">
-              <div className="card shadow-sm h-100">
+              <div className="card shadow-sm h-100" style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)' }}>
                 <div className="card-body p-4">
-                  <h2 className="h4 mb-4">Informații contact</h2>
+                  <h2 className="h4 mb-4 text-light">Informații contact</h2>
                   
                   <div className="mb-4">
-                    <h3 className="h6 mb-2">Adresă</h3>
-                    <p className="mb-0">{config?.locatie || 'București, România'}</p>
+                    <h3 className="h6 mb-2 text-light">Adresă</h3>
+                    <p className="mb-0 text-light">{config?.locatie || 'București, România'}</p>
                   </div>
 
                   <div className="mb-4">
-                    <h3 className="h6 mb-2">Telefon</h3>
-                    <p className="mb-0">
-                      <a href={`tel:${config?.whatsapp || '0722000000'}`} className="text-decoration-none">
+                    <h3 className="h6 mb-2 text-light">Telefon</h3>
+                    <p className="mb-0 text-light">
+                      <a href={`tel:${config?.whatsapp || '0722000000'}`} className="text-decoration-none text-light">
                         {config?.whatsapp || '0722 000 000'}
                       </a>
                     </p>
                   </div>
 
                   <div className="mb-4">
-                    <h3 className="h6 mb-2">Email</h3>
-                    <p className="mb-0">
-                      <a href="mailto:contact@autod.ro" className="text-decoration-none">
+                    <h3 className="h6 mb-2 text-light">Email</h3>
+                    <p className="mb-0 text-light">
+                      <a href="mailto:contact@autod.ro" className="text-decoration-none text-light">
                         contact@autod.ro
                       </a>
                     </p>
                   </div>
 
                   <div className="mb-4">
-                    <h3 className="h6 mb-2">Program</h3>
-                    <p className="mb-0">Luni - Vineri: 09:00 - 18:00</p>
-                    <p className="mb-0">Sâmbătă: 10:00 - 14:00</p>
-                    <p className="mb-0">Duminică: Închis</p>
+                    <h3 className="h6 mb-2 text-light">Program</h3>
+                    <p className="mb-0 text-light">Luni - Vineri: 09:00 - 18:00</p>
+                    <p className="mb-0 text-light">Sâmbătă: 10:00 - 14:00</p>
+                    <p className="mb-0 text-light">Duminică: Închis</p>
                   </div>
                 </div>
               </div>
@@ -70,12 +74,12 @@ export default function ContactPage() {
 
             {/* Contact Form */}
             <div className="col-md-6">
-              <div className="card shadow-sm h-100">
+              <div className="card shadow-sm h-100" style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)' }}>
                 <div className="card-body p-4">
-                  <h2 className="h4 mb-4">Formular contact</h2>
+                  <h2 className="h4 mb-4 text-light">Formular contact</h2>
                   <form onSubmit={handleSubmit}>
                     <div className="mb-3">
-                      <label htmlFor="nume" className="form-label">Nume complet</label>
+                      <label htmlFor="nume" className="form-label text-light">Nume complet</label>
                       <input
                         type="text"
                         className="form-control"
@@ -84,10 +88,11 @@ export default function ContactPage() {
                         value={formData.nume}
                         onChange={handleChange}
                         required
+                        style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)', color: 'var(--light-color)' }}
                       />
                     </div>
                     <div className="mb-3">
-                      <label htmlFor="email" className="form-label">Email</label>
+                      <label htmlFor="email" className="form-label text-light">Email</label>
                       <input
                         type="email"
                         className="form-control"
@@ -96,10 +101,11 @@ export default function ContactPage() {
                         value={formData.email}
                         onChange={handleChange}
                         required
+                        style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)', color: 'var(--light-color)' }}
                       />
                     </div>
                     <div className="mb-3">
-                      <label htmlFor="mesaj" className="form-label">Mesaj</label>
+                      <label htmlFor="mesaj" className="form-label text-light">Mesaj</label>
                       <textarea
                         className="form-control"
                         id="mesaj"
@@ -108,6 +114,7 @@ export default function ContactPage() {
                         value={formData.mesaj}
                         onChange={handleChange}
                         required
+                        style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)', color: 'var(--light-color)' }}
                       ></textarea>
                     </div>
                     <button type="submit" className="btn btn-primary w-100">

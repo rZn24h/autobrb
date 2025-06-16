@@ -186,7 +186,7 @@ export default function HomePage() {
           ) : (
             <>
               <h1 className="display-4 fw-bold mb-4">{config?.nume || 'Anunțuri Auto'}</h1>
-              <p className="lead mb-0">{config?.descriere || 'Descoperă mașina perfectă pentru tine!'}</p>
+              <p className="lead mb-0">{config?.slogan || 'Descoperă mașina perfectă pentru tine!'}</p>
 
               {/* Search Section */}
               <div className="search-container mt-4">
@@ -253,7 +253,7 @@ export default function HomePage() {
                   <div className="col-12 col-lg-3">
                     <label className="form-label text-white">&nbsp;</label>
                     <button
-                      className="btn btn-light btn-lg w-100"
+                      className="btn btn-danger btn-lg w-100"
                       onClick={handleReset}
                     >
                       Resetează filtrele
@@ -272,17 +272,17 @@ export default function HomePage() {
         <div className="listings-container">
           <div className="listings-header mb-4">
             <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
-              <h2 className="h3 mb-0">Anunțuri disponibile</h2>
+              <h2 className="h3 mb-0 text-light">Anunțuri disponibile</h2>
               <div className="sort-controls d-flex gap-2 flex-wrap">
                 <button
-                  className={`btn ${sortBy === 'price-asc' ? 'btn-primary' : 'btn-outline-primary'}`}
+                  className={`btn ${sortBy === 'price-asc' ? 'btn-danger' : 'btn-outline-danger'}`}
                   onClick={() => handleSort('price-asc')}
                 >
                   <i className="bi bi-sort-numeric-down me-1"></i>
                   Preț crescător
                 </button>
                 <button
-                  className={`btn ${sortBy === 'price-desc' ? 'btn-primary' : 'btn-outline-primary'}`}
+                  className={`btn ${sortBy === 'price-desc' ? 'btn-danger' : 'btn-outline-danger'}`}
                   onClick={() => handleSort('price-desc')}
                 >
                   <i className="bi bi-sort-numeric-up-alt me-1"></i>
