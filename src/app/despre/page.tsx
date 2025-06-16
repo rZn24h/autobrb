@@ -31,7 +31,7 @@ export default function AboutPage() {
             <div className="card-body p-4">
               <h2 className="h4 mb-4">Platforma noastră</h2>
               <p className="lead mb-4">
-                AutoD este o platformă modernă dedicată vânzării și cumpărării de mașini, 
+                AutoBRB este o platformă modernă dedicată vânzării și cumpărării de mașini, 
                 oferind o experiență simplă și eficientă atât pentru vânzători, cât și pentru cumpărători.
               </p>
 
