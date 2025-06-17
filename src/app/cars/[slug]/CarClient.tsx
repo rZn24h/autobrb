@@ -46,7 +46,7 @@ export default function CarClient({ car }: { car: CarDetails }) {
   const whatsappLink = config?.whatsapp ? `https://wa.me/${config.whatsapp.replace(/\D/g, '')}` : '';
 
   return (
-    <div className="car-details-page" style={{ backgroundColor: 'var(--dark-color)' }}>
+    <div className="car-details-page" style={{ backgroundColor: 'var(--background-main)' }}>
       {/* Back button */}
       <div className="container mt-3 mt-md-4">
         <Link href="/" className="btn btn-outline-danger">
@@ -61,7 +61,7 @@ export default function CarClient({ car }: { car: CarDetails }) {
           {/* Left column - Images */}
           <div className="col-lg-8">
             {/* Main image container */}
-            <div className="card border-0 shadow-sm mb-3 mb-md-4" style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)' }}>
+            <div className="card border-0 shadow-sm mb-3 mb-md-4" style={{ backgroundColor: 'var(--gray-900)', border: '1px solid var(--gray-800)' }}>
               <div className="card-body p-0">
                 <div className="position-relative">
                   {/* Main image */}
@@ -163,7 +163,7 @@ export default function CarClient({ car }: { car: CarDetails }) {
             </div>
 
             {/* Description */}
-            <div className="card border-0 shadow-sm mb-3 mb-md-4" style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)' }}>
+            <div className="card border-0 shadow-sm mb-3 mb-md-4" style={{ backgroundColor: 'var(--gray-900)', border: '1px solid var(--gray-800)' }}>
               <div className="card-body p-3 p-md-4">
                 <h3 className="h5 mb-3 mb-md-4 text-light">📝 Descriere</h3>
                 <div className="description text-light" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
@@ -176,18 +176,22 @@ export default function CarClient({ car }: { car: CarDetails }) {
 
             {/* Features */}
             {car.dotari && (
-              <div className="card border-0 shadow-sm mb-3 mb-md-4" style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)' }}>
+              <div className="card border-0 shadow-sm mb-3 mb-md-4" style={{ backgroundColor: 'var(--gray-900)', border: '1px solid var(--gray-800)' }}>
                 <div className="card-body p-3 p-md-4">
                   <h3 className="h5 mb-3 mb-md-4 text-light">✨ Dotări</h3>
                   <div className="row g-2 g-md-3">
-                    {car.dotari.split(',').map((feature: string, idx: number) => (
-                      <div key={idx} className="col-6 col-md-4">
-                        <div className="d-flex align-items-center text-light">
-                          <i className="bi bi-check2 text-danger me-2"></i>
-                          {feature.trim()}
+                    {car.dotari.split('\n').map((feature: string, idx: number) => {
+                      const clean = feature.trim();
+                      if (!clean) return null;
+                      return (
+                        <div key={idx} className="col-12 col-md-6 col-lg-4">
+                          <div className="d-flex align-items-center text-light">
+                            <i className="bi bi-check2 text-success me-2"></i>
+                            {clean}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -197,7 +201,7 @@ export default function CarClient({ car }: { car: CarDetails }) {
           {/* Right column - Technical details and contact */}
           <div className="col-lg-4">
             {/* Price and contact */}
-            <div className="card border-0 shadow-sm mb-3 mb-md-4" style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)' }}>
+            <div className="card border-0 shadow-sm mb-3 mb-md-4" style={{ backgroundColor: 'var(--gray-900)', border: '1px solid var(--gray-800)' }}>
               <div className="card-body p-3 p-md-4">
                 <div className="d-flex justify-content-between align-items-center mb-3 mb-md-4">
                   <h3 className="h4 h3-md mb-0 text-light">Preț</h3>
@@ -270,7 +274,7 @@ export default function CarClient({ car }: { car: CarDetails }) {
             </div>
 
             {/* Technical details */}
-            <div className="card border-0 shadow-sm mb-3 mb-md-4" style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)' }}>
+            <div className="card border-0 shadow-sm mb-3 mb-md-4" style={{ backgroundColor: 'var(--gray-900)', border: '1px solid var(--gray-800)' }}>
               <div className="card-body p-3 p-md-4">
                 <h3 className="h5 mb-3 mb-md-4 text-light">
                   <i className="bi bi-wrench-adjustable text-light me-2"></i>Detalii tehnice
@@ -322,7 +326,7 @@ export default function CarClient({ car }: { car: CarDetails }) {
 
             {/* External link button */}
             {car.linkExtern && (
-              <div className="card border-0 shadow-sm" style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)' }}>
+              <div className="card border-0 shadow-sm" style={{ backgroundColor: 'var(--gray-900)', border: '1px solid var(--gray-800)' }}>
                 <div className="card-body p-3 p-md-4">
                   <a 
                     href={car.linkExtern} 

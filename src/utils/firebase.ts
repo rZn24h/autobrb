@@ -4,13 +4,13 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDCngBpxC_rH2I5Cp4qiVKv4imSHXi2tHY",
-  authDomain: "exam-scheduler-5c99a.firebaseapp.com",
-  projectId: "exam-scheduler-5c99a",
-  storageBucket: "exam-scheduler-5c99a.firebasestorage.app",
-  messagingSenderId: "983680589183",
-  appId: "1:983680589183:web:c35a3839105c75f3afce4a",
-  measurementId: "G-BFKWHL08VZ"
+  apiKey: "AIzaSyABqoSUQFyIR5NsrKqOhRRo_LsxLKEftPs",
+  authDomain: "autod-c1eb7.firebaseapp.com",
+  projectId: "autod-c1eb7",
+  storageBucket: "autod-c1eb7.firebasestorage.app",
+  messagingSenderId: "1059205423463",
+  appId: "1:1059205423463:web:7c59008e37ea4cd6250fc2",
+  measurementId: "G-R1HGYJEYE4"
 };
 
 // Initialize Firebase

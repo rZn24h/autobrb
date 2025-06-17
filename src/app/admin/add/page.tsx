@@ -220,7 +220,7 @@ export default function AddCarPage() {
       <div className="container py-4">
         <div className="row justify-content-center">
           <div className="col-lg-10">
-            <h1 className="mb-4 text-light">Adaugă mașină</h1>
+            <h1 className="mb-4 text-dark">Adaugă mașină</h1>
             
             {/* Success message */}
             {success && (

@@ -141,13 +141,13 @@ export default function SettingsPage() {
     <AdminAuthGuard>
       <AdminNavbar />
       <div className="container py-4">
-        <h1 className="mb-4 text-light">Setări</h1>
+        <h1 className="mb-4 text-dark">Setări</h1>
         {success && <div className="alert alert-success">{success}</div>}
         {error && <div className="alert alert-danger">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="row g-3">
             <div className="col-md-6">
-              <label className="form-label text-light">Nume site</label>
+              <label className="form-label text-dark">Nume site</label>
               <input
                 type="text"
                 className="form-control"
@@ -158,7 +158,7 @@ export default function SettingsPage() {
               />
             </div>
             <div className="col-md-6">
-              <label className="form-label text-light">Slogan</label>
+              <label className="form-label text-dark">Slogan</label>
               <input
                 type="text"
                 className="form-control"
@@ -169,7 +169,7 @@ export default function SettingsPage() {
               />
             </div>
             <div className="col-md-6">
-              <label className="form-label text-light">Logo</label>
+              <label className="form-label text-dark">Logo</label>
               {form.logoUrl && (
                 <div className="mb-2">
                   <img
@@ -188,7 +188,7 @@ export default function SettingsPage() {
               />
             </div>
             <div className="col-md-6">
-              <label className="form-label text-light">Banner</label>
+              <label className="form-label text-dark">Banner</label>
               {form.bannerImg && (
                 <div className="mb-2">
                   <img
@@ -214,7 +214,7 @@ export default function SettingsPage() {
             </div>
             
             <div className="col-md-4">
-              <label className="form-label text-light">Locație</label>
+              <label className="form-label text-dark">Locație</label>
               <input
                 type="text"
                 className="form-control"
@@ -226,7 +226,7 @@ export default function SettingsPage() {
             </div>
             
             <div className="col-md-4">
-              <label className="form-label text-light">Telefon/WhatsApp</label>
+              <label className="form-label text-dark">Telefon/WhatsApp</label>
               <input
                 type="tel"
                 className="form-control"
@@ -238,7 +238,7 @@ export default function SettingsPage() {
             </div>
             
             <div className="col-md-4">
-              <label className="form-label text-light">Link Facebook</label>
+              <label className="form-label text-dark">Link Facebook</label>
               <input
                 type="url"
                 className="form-control"

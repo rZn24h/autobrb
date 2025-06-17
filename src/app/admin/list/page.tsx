@@ -116,7 +116,7 @@ export default function ListCarsPage() {
       <AdminNavbar />
       <div className="container py-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h1 className="h3 mb-0 text-light">Listă mașini</h1>
+          <h1 className="h3 mb-0 text-dark">Listă mașini</h1>
           <Link href="/admin/add" className="btn btn-primary">
             <i className="bi bi-plus-lg me-2"></i>
             Adaugă mașină
@@ -139,7 +139,7 @@ export default function ListCarsPage() {
 
         {loading ? (
           <div className="text-center py-5">
-            <div className="spinner-border text-light" role="status">
+            <div className="spinner-border text-dark" role="status">
               <span className="visually-hidden">Se încarcă...</span>
             </div>
           </div>
@@ -149,7 +149,7 @@ export default function ListCarsPage() {
           </div>
         ) : cars.length === 0 ? (
           <div className="text-center py-5">
-            <p className="text-light mb-4">Nu există mașini în baza de date.</p>
+            <p className="text-dark mb-4">Nu există mașini în baza de date.</p>
             <Link href="/admin/add" className="btn btn-primary">
               <i className="bi bi-plus-lg me-2"></i>
               Adaugă prima mașină
