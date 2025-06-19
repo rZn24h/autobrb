@@ -5,12 +5,36 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Script from 'next/script';
+import { db } from '@/utils/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "AutoD",
-  description: "AutoD - Your Car Service Platform",
+async function getMetadata() {
+  try {
+    const docRef = doc(db, 'config', 'public');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        title: data.metaTitle || 'AutoBRB',
+        description: data.metaDescription || 'AutoBRB - Platforma ta de încredere pentru mașini',
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching metadata:', error);
+  }
+  
+  // Default fallback values
+  return {
+    title: 'AutoBRB',
+    description: 'AutoBRB - Platforma ta de încredere pentru mașini',
+  };
+}
+
+export const generateMetadata = async (): Promise<Metadata> => {
+  const metadata = await getMetadata();
+  return metadata;
 };
 
 export default function RootLayout({

@@ -7,6 +7,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/utils/firebase';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminNavbar from '@/components/AdminNavbar';
+import { processImage, isImageFile } from '@/utils/imageProcessing';
 
 interface ConfigData {
   nume: string;
@@ -16,6 +17,8 @@ interface ConfigData {
   locatie?: string;
   whatsapp?: string;
   facebook?: string;
+  metaTitle?: string;
+  metaDescription?: string;
 }
 
 export default function SettingsPage() {
@@ -28,6 +31,8 @@ export default function SettingsPage() {
     locatie: '',
     whatsapp: '',
     facebook: '',
+    metaTitle: '',
+    metaDescription: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -53,6 +58,8 @@ export default function SettingsPage() {
             locatie: data.locatie || '',
             whatsapp: data.whatsapp || '',
             facebook: data.facebook || '',
+            metaTitle: data.metaTitle || '',
+            metaDescription: data.metaDescription || '',
           });
         }
       } catch (err) {
@@ -69,13 +76,32 @@ export default function SettingsPage() {
     setForm(prev => ({ ...prev, [name]: value || '' }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner') => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner') => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (type === 'logo') {
-        setLogoFile(file);
-      } else {
-        setBannerFile(file);
+      
+      if (!isImageFile(file)) {
+        setError('Vă rugăm să selectați doar fișiere imagine.');
+        return;
+      }
+
+      try {
+        const processedImage = await processImage(file);
+        if (processedImage) {
+          if (type === 'logo') {
+            setLogoFile(processedImage.file);
+            setForm(prev => ({ ...prev, logoUrl: processedImage.url }));
+          } else {
+            setBannerFile(processedImage.file);
+            setForm(prev => ({ ...prev, bannerImg: processedImage.url }));
+          }
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError('A apărut o eroare la procesarea imaginii.');
+        }
       }
     }
   };
@@ -246,6 +272,34 @@ export default function SettingsPage() {
                 value={form.facebook}
                 onChange={handleChange}
                 placeholder="Ex: https://www.facebook.com/numepagina"
+              />
+            </div>
+
+            <div className="col-12">
+              <h3 className="h5 mt-4 mb-3 text-dark">Meta Date SEO</h3>
+            </div>
+            
+            <div className="col-md-6">
+              <label className="form-label text-dark">Titlu Site (Meta Title)</label>
+              <input
+                type="text"
+                className="form-control"
+                name="metaTitle"
+                value={form.metaTitle}
+                onChange={handleChange}
+                placeholder="Titlul care apare în tab-ul browserului"
+              />
+            </div>
+            
+            <div className="col-md-6">
+              <label className="form-label text-dark">Descriere Site (Meta Description)</label>
+              <input
+                type="text"
+                className="form-control"
+                name="metaDescription"
+                value={form.metaDescription}
+                onChange={handleChange}
+                placeholder="Descrierea site-ului pentru motoarele de căutare"
               />
             </div>
 

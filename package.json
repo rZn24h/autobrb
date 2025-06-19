@@ -12,6 +12,7 @@
     "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.6",
     "bootstrap-icons": "^1.13.1",
+    "browser-image-compression": "^2.0.2",
     "firebase": "^11.8.1",
     "next": "14.1.0",
     "node-fetch": "^3.3.2",
