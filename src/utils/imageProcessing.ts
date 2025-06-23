@@ -7,9 +7,9 @@ export interface ProcessedImage {
 
 export async function processImage(file: File): Promise<ProcessedImage | null> {
   try {
-    // 1. Verifică dimensiunea fișierului (2MB = 2 * 1024 * 1024 bytes)
-    if (file.size > 2 * 1024 * 1024) {
-      throw new Error('Imaginea este prea mare. Dimensiunea maximă permisă este 2MB.');
+    // 1. Verifică dimensiunea fișierului (8MB = 8 * 1024 * 1024 bytes)
+    if (file.size > 8 * 1024 * 1024) {
+      throw new Error('Imaginea este prea mare. Dimensiunea maximă permisă este 8MB.');
     }
 
     // 2. Verifică dimensiunile imaginii
@@ -22,9 +22,9 @@ export async function processImage(file: File): Promise<ProcessedImage | null> {
       img.src = imageUrl;
     });
 
-    if (img.width > 2048 || img.height > 2048) {
+    if (img.width > 4000 || img.height > 4000) {
       URL.revokeObjectURL(imageUrl);
-      throw new Error('Dimensiunile imaginii sunt prea mari. Dimensiunea maximă permisă este 2048x2048 pixeli.');
+      throw new Error('Dimensiunile imaginii sunt prea mari. Dimensiunea maximă permisă este 4000x4000 pixeli.');
     }
 
     // 3. Comprimă imaginea
