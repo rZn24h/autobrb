@@ -19,6 +19,10 @@ interface ConfigData {
   facebook?: string;
   metaTitle?: string;
   metaDescription?: string;
+  contactEmail?: string;
+  program?: string;
+  mapLat?: string;
+  mapLng?: string;
 }
 
 export default function SettingsPage() {
@@ -33,6 +37,10 @@ export default function SettingsPage() {
     facebook: '',
     metaTitle: '',
     metaDescription: '',
+    contactEmail: '',
+    program: '',
+    mapLat: '',
+    mapLng: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -60,6 +68,10 @@ export default function SettingsPage() {
             facebook: data.facebook || '',
             metaTitle: data.metaTitle || '',
             metaDescription: data.metaDescription || '',
+            contactEmail: data.contactEmail || '',
+            program: data.program || '',
+            mapLat: data.mapLat || '',
+            mapLng: data.mapLng || '',
           });
         }
       } catch (err) {
@@ -300,6 +312,58 @@ export default function SettingsPage() {
                 value={form.metaDescription}
                 onChange={handleChange}
                 placeholder="Descrierea site-ului pentru motoarele de căutare"
+              />
+            </div>
+
+            <div className="col-12">
+              <h3 className="h5 mt-4 mb-3 text-dark">Informații Contact & Hartă</h3>
+            </div>
+            
+            <div className="col-md-6">
+              <label className="form-label text-dark">Email Contact</label>
+              <input
+                type="email"
+                className="form-control"
+                name="contactEmail"
+                value={form.contactEmail}
+                onChange={handleChange}
+                placeholder="Email-ul afișat pe pagina de contact"
+              />
+            </div>
+
+            <div className="col-md-6">
+              <label className="form-label text-dark">Program</label>
+              <textarea
+                className="form-control"
+                name="program"
+                rows={3}
+                value={form.program}
+                onChange={handleChange}
+                placeholder="Programul afișat pe pagina de contact (fiecare rând pe o linie nouă)"
+              ></textarea>
+            </div>
+
+            <div className="col-md-6">
+              <label className="form-label text-dark">Latitudine Hartă</label>
+              <input
+                type="text"
+                className="form-control"
+                name="mapLat"
+                value={form.mapLat}
+                onChange={handleChange}
+                placeholder="ex: 44.4268"
+              />
+            </div>
+
+            <div className="col-md-6">
+              <label className="form-label text-dark">Longitudine Hartă</label>
+              <input
+                type="text"
+                className="form-control"
+                name="mapLng"
+                value={form.mapLng}
+                onChange={handleChange}
+                placeholder="ex: 26.1024"
               />
             </div>
 

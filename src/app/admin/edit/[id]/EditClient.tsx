@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/utils/firebase';
+import { db, storage } from '@/utils/firebase';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminNavbar from '@/components/AdminNavbar';
 import { updateCar } from '@/utils/apiCars';
+import { processImage, isImageFile } from '@/utils/imageProcessing';
 
 interface CarData {
   id: string;
@@ -36,6 +38,8 @@ export default function EditClient({ carId }: { carId: string }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchCar = async () => {
@@ -86,6 +90,46 @@ export default function EditClient({ carId }: { carId: string }) {
     setCar({ ...car, coverImage: imageUrl });
   };
 
+  const handleImageDelete = (imageUrl: string) => {
+    if (!car) return;
+    setImagesToDelete([...imagesToDelete, imageUrl]);
+    setCar({ ...car, images: car.images.filter(img => img !== imageUrl) });
+    if (car.coverImage === imageUrl) {
+      const remainingImages = car.images.filter(img => img !== imageUrl);
+      setCar(prev => ({ ...prev!, coverImage: remainingImages[0] || '' }));
+    }
+  };
+
+  const handleNewImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+
+    setError('');
+    const files = Array.from(e.target.files);
+    const processedFiles: File[] = [];
+
+    for (const file of files) {
+      if (!isImageFile(file)) {
+        setError(`Fișierul ${file.name} nu este o imagine validă.`);
+        continue;
+      }
+      try {
+        const processed = await processImage(file);
+        if (processed) {
+          processedFiles.push(processed.file);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Eroare la procesarea imaginii.');
+        return;
+      }
+    }
+
+    if (processedFiles.length > 0) {
+      setNewImageFiles(prev => [...prev, ...processedFiles]);
+      const newImageUrls = processedFiles.map(file => URL.createObjectURL(file));
+      setCar(prev => ({ ...prev!, images: [...prev!.images, ...newImageUrls] }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!car) return;
@@ -95,13 +139,46 @@ export default function EditClient({ carId }: { carId: string }) {
     setSuccess('');
 
     try {
+      let updatedImages = car.images;
+
+      for (const imageUrl of imagesToDelete) {
+        try {
+          const imageRef = ref(storage, imageUrl);
+          await deleteObject(imageRef);
+        } catch (err) {
+          if (err instanceof Error && 'code' in err && (err as any).code !== 'storage/object-not-found') {
+            console.warn(`Nu s-a putut șterge imaginea: ${imageUrl}`, err);
+          }
+        }
+      }
+      updatedImages = updatedImages.filter(img => !imagesToDelete.includes(img));
+
+      const newImageUrls: string[] = [];
+      for (const file of newImageFiles) {
+        const imageName = `${car.id}-${Date.now()}-${file.name}`;
+        const imageRef = ref(storage, `cars/${imageName}`);
+        await uploadBytes(imageRef, file);
+        const url = await getDownloadURL(imageRef);
+        newImageUrls.push(url);
+      }
+      
+      updatedImages = updatedImages.filter(img => !img.startsWith('blob:'));
+      updatedImages.push(...newImageUrls);
+
+      let finalCoverImage: string | undefined = car.coverImage;
+      if (!updatedImages.includes(finalCoverImage || '')) {
+        finalCoverImage = updatedImages.length > 0 ? updatedImages[0] : '';
+      }
+
       await updateCar(car.id, {
         ...car,
+        images: updatedImages,
+        coverImage: finalCoverImage || '',
         pret: Number(car.pret),
         km: Number(car.km),
         an: Number(car.an),
-        capacitate: Number(car.capacitate),
-        putere: car.putere ? Number(car.putere) : null
+        capacitate: String(car.capacitate),
+        putere: car.putere ? String(car.putere) : '',
       });
 
       setSuccess('✅ Anunțul a fost actualizat cu succes!');
@@ -184,6 +261,14 @@ export default function EditClient({ carId }: { carId: string }) {
                               border: imageUrl === car.coverImage ? '3px solid #0d6efd' : '1px solid #dee2e6',
                             }}
                           />
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm position-absolute top-0 end-0 m-1"
+                            onClick={() => handleImageDelete(imageUrl)}
+                            title="Șterge imaginea"
+                          >
+                            &times;
+                          </button>
                           <div className="d-grid">
                             <button
                               type="button"
@@ -196,6 +281,18 @@ export default function EditClient({ carId }: { carId: string }) {
                         </div>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Add new images */}
+                  <div className="mb-4">
+                    <label className="form-label">Adaugă imagini noi</label>
+                    <input
+                      type="file"
+                      className="form-control"
+                      multiple
+                      accept="image/*"
+                      onChange={handleNewImages}
+                    />
                   </div>
 
                   {/* Basic details */}

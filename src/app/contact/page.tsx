@@ -13,7 +13,6 @@ export default function ContactPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Form submission logic would go here
     alert('Formularul a fost trimis cu succes!');
     setFormData({ nume: '', email: '', mesaj: '' });
   };
@@ -26,124 +25,190 @@ export default function ContactPage() {
     }));
   };
 
+  const mapLat = config?.mapLat || '47.734478';
+  const mapLng = config?.mapLng || '26.666963';
+  const googleMapsUrl = `https://www.google.com/maps?q=${mapLat},${mapLng}`;
+  const googleMapsEmbedUrl = `https://maps.google.com/maps?q=${mapLat},${mapLng}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+
   return (
-    <div className="container py-5">
-      <div className="row justify-content-center">
-        <div className="col-lg-8">
-          <h1 className="display-4 text-center mb-5">Contact</h1>
+    <>
+      <style jsx>{`
+        .map-container {
+          position: relative;
+          overflow: hidden;
+          border-radius: var(--bs-card-border-radius);
+        }
+        .map-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          color: white;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          text-align: center;
+          transition: opacity 0.3s ease;
+          pointer-events: none; /* Allows click to go through to the link */
+          opacity: 1;
+        }
+        .map-container:hover .map-overlay {
+          opacity: 0;
+        }
+        .map-overlay i {
+          font-size: 2rem;
+          margin-bottom: 0.5rem;
+        }
+        .contact-info-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+        .contact-info-item i {
+          font-size: 1.25rem;
+          margin-top: 0.25rem;
+          color: var(--bs-primary);
+        }
+      `}</style>
+      <div className="container py-5">
+        <div className="row justify-content-center">
+          <div className="col-lg-10">
+            <h1 className="display-4 text-center mb-5">Contact</h1>
 
-          <div className="row g-4">
-            {/* Contact Information */}
-            <div className="col-md-6">
-              <div className="card shadow-sm h-100" style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)' }}>
-                <div className="card-body p-4">
-                  <h2 className="h4 mb-4 text-light">Informații contact</h2>
-                  
-                  <div className="mb-4">
-                    <h3 className="h6 mb-2 text-light">Adresă</h3>
-                    <p className="mb-0 text-light">{config?.locatie || 'București, România'}</p>
+            <div className="row g-4">
+              <div className="col-lg-5">
+                <div className="card shadow-sm h-100">
+                  <div className="card-body p-4">
+                    <h2 className="h4 mb-4">Informații contact</h2>
+                    
+                    <div className="mb-3 contact-info-item">
+                      <i className="bi bi-geo-alt-fill"></i>
+                      <div>
+                        <h3 className="h6 mb-1">Adresă</h3>
+                        <p className="mb-0 text-muted">{config?.locatie || 'București, România'}</p>
+                      </div>
+                    </div>
+
+                    <div className="mb-3 contact-info-item">
+                      <i className="bi bi-telephone-fill"></i>
+                      <div>
+                        <h3 className="h6 mb-1">Telefon</h3>
+                        <p className="mb-0 text-muted">
+                          <a href={`tel:${config?.whatsapp || '0722000000'}`} className="text-decoration-none">
+                            {config?.whatsapp || '0722 000 000'}
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mb-3 contact-info-item">
+                       <i className="bi bi-envelope-fill"></i>
+                       <div>
+                         <h3 className="h6 mb-1">Email</h3>
+                         <p className="mb-0 text-muted">
+                           <a href={`mailto:${config?.contactEmail || 'contact@autobrb.ro'}`} className="text-decoration-none">
+                             {config?.contactEmail || 'contact@autobrb.ro'}
+                           </a>
+                         </p>
+                       </div>
+                    </div>
+
+                    <div className="contact-info-item">
+                      <i className="bi bi-calendar-week-fill"></i>
+                      <div>
+                        <h3 className="h6 mb-1">Program</h3>
+                        <div className="text-muted">
+                          {config?.program ? (
+                            config.program.split('\\n').map((line: string, index: number) => (
+                              <p key={index} className="mb-0">{line}</p>
+                            ))
+                          ) : (
+                            <>
+                              <p className="mb-0">Luni - Vineri: 09:00 - 18:00</p>
+                              <p className="mb-0">Sâmbătă: 10:00 - 14:00</p>
+                              <p className="mb-0">Duminică: Închis</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                </div>
+              </div>
 
-                  <div className="mb-4">
-                    <h3 className="h6 mb-2 text-light">Telefon</h3>
-                    <p className="mb-0 text-light">
-                      <a href={`tel:${config?.whatsapp || '0722000000'}`} className="text-decoration-none text-light">
-                        {config?.whatsapp || '0722 000 000'}
-                      </a>
-                    </p>
-                  </div>
-
-                  <div className="mb-4">
-                    <h3 className="h6 mb-2 text-light">Email</h3>
-                    <p className="mb-0 text-light">
-                      <a href="mailto:contact@autod.ro" className="text-decoration-none text-light">
-                        contact@autod.ro
-                      </a>
-                    </p>
-                  </div>
-
-                  <div className="mb-4">
-                    <h3 className="h6 mb-2 text-light">Program</h3>
-                    <p className="mb-0 text-light">Luni - Vineri: 09:00 - 18:00</p>
-                    <p className="mb-0 text-light">Sâmbătă: 10:00 - 14:00</p>
-                    <p className="mb-0 text-light">Duminică: Închis</p>
+              <div className="col-lg-7">
+                <div className="card shadow-sm h-100">
+                  <div className="card-body p-4">
+                    <h2 className="h4 mb-4">Formular contact</h2>
+                    <form onSubmit={handleSubmit}>
+                      <div className="mb-3">
+                        <label htmlFor="nume" className="form-label">Nume complet</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="nume"
+                          name="nume"
+                          value={formData.nume}
+                          onChange={handleChange}
+                          required
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <label htmlFor="email" className="form-label">Email</label>
+                        <input
+                          type="email"
+                          className="form-control"
+                          id="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          required
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <label htmlFor="mesaj" className="form-label">Mesaj</label>
+                        <textarea
+                          className="form-control"
+                          id="mesaj"
+                          name="mesaj"
+                          rows={4}
+                          value={formData.mesaj}
+                          onChange={handleChange}
+                          required
+                        ></textarea>
+                      </div>
+                      <button type="submit" className="btn btn-primary w-100">
+                        Trimite mesaj
+                      </button>
+                    </form>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Contact Form */}
-            <div className="col-md-6">
-              <div className="card shadow-sm h-100" style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)' }}>
-                <div className="card-body p-4">
-                  <h2 className="h4 mb-4 text-light">Formular contact</h2>
-                  <form onSubmit={handleSubmit}>
-                    <div className="mb-3">
-                      <label htmlFor="nume" className="form-label text-light">Nume complet</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="nume"
-                        name="nume"
-                        value={formData.nume}
-                        onChange={handleChange}
-                        required
-                        style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)', color: 'var(--light-color)' }}
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label htmlFor="email" className="form-label text-light">Email</label>
-                      <input
-                        type="email"
-                        className="form-control"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)', color: 'var(--light-color)' }}
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label htmlFor="mesaj" className="form-label text-light">Mesaj</label>
-                      <textarea
-                        className="form-control"
-                        id="mesaj"
-                        name="mesaj"
-                        rows={4}
-                        value={formData.mesaj}
-                        onChange={handleChange}
-                        required
-                        style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)', color: 'var(--light-color)' }}
-                      ></textarea>
-                    </div>
-                    <button type="submit" className="btn btn-primary w-100">
-                      Trimite mesaj
-                    </button>
-                  </form>
+            <div className="mt-5">
+              <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer" className="map-container d-block">
+                <div className="map-overlay">
+                  <i className="bi bi-geo-fill"></i>
+                  <p className="h5">Click pentru a deschide harta</p>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Google Maps Embed */}
-          <div className="mt-5">
-            <div className="card shadow-sm">
-              <div className="card-body p-0">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2848.899790399046!2d26.1024!3d44.4268!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDTCsDI1JzM2LjUiTiAyNsKwMDYnMDguNiJF!5e0!3m2!1sen!2sro!4v1635000000000!5m2!1sen!2sro"
+                  src={googleMapsEmbedUrl}
                   width="100%"
                   height="450"
-                  style={{ border: 0 }}
+                  style={{ border: 0, borderRadius: 'var(--bs-card-border-radius)', pointerEvents: 'none' }}
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                 ></iframe>
-              </div>
+              </a>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 } 
