@@ -112,7 +112,7 @@ export default function CarClient({ car }: { car: CarDetails }) {
                       style={{ 
                         objectFit: 'contain',
                         padding: '1rem',
-                        cursor: 'zoom-in'
+                        cursor: 'pointer'
                       }}
                       onClick={() => setShowLightbox(true)}
                     />
@@ -143,6 +143,7 @@ export default function CarClient({ car }: { car: CarDetails }) {
                         className="btn btn-dark rounded-circle"
                         style={{ width: '40px', height: '40px', padding: 0 }}
                         onClick={() => setShowLightbox(true)}
+                        title="Mărește imaginea"
                       >
                         <i className="bi bi-zoom-in"></i>
                       </button>
@@ -397,43 +398,51 @@ export default function CarClient({ car }: { car: CarDetails }) {
             }
           }}
         >
-          <div className="position-relative w-100 h-100 d-flex align-items-center justify-content-center">
+          <div className="position-relative w-100 h-100 d-flex align-items-center justify-content-center p-3">
             {/* Main image */}
-            <div className="position-relative" style={{ maxWidth: '90vw', maxHeight: '90vh' }}>
+            <div className="position-relative" style={{ maxWidth: '95vw', maxHeight: '95vh' }}>
               <img
                 src={car.images[activeImage]}
                 alt={`${car.marca} ${car.model} - Imagine ${activeImage + 1}`}
                 className="img-fluid"
                 style={{ 
-                  maxHeight: '90vh', 
-                  maxWidth: '90vw',
+                  maxHeight: '95vh', 
+                  maxWidth: '95vw',
                   objectFit: 'contain',
-                  borderRadius: '8px'
+                  borderRadius: '8px',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
                 }}
               />
               
               {/* Close button */}
               <button 
-                className="btn btn-danger position-absolute top-0 end-0 m-3 rounded-circle"
-                style={{ width: '50px', height: '50px', padding: 0, zIndex: 1060 }}
+                className="btn btn-danger position-absolute top-0 end-0 m-2 m-md-3 rounded-circle"
+                style={{ 
+                  width: '45px', 
+                  height: '45px', 
+                  padding: 0, 
+                  zIndex: 1060,
+                  fontSize: '1.2rem'
+                }}
                 onClick={() => setShowLightbox(false)}
+                title="Închide"
               >
                 <i className="bi bi-x-lg"></i>
               </button>
 
               {/* Image counter */}
-              <div className="position-absolute top-0 start-0 m-3">
+              <div className="position-absolute top-0 start-0 m-2 m-md-3">
                 <span className="badge bg-dark text-white fs-6 px-3 py-2">
                   {activeImage + 1} / {car.images.length}
                 </span>
               </div>
 
               {/* Image title */}
-              <div className="position-absolute bottom-0 start-0 end-0 p-3" style={{
+              <div className="position-absolute bottom-0 start-0 end-0 p-2 p-md-3" style={{
                 background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
                 borderRadius: '0 0 8px 8px'
               }}>
-                <h3 className="text-white mb-0 text-center">
+                <h3 className="text-white mb-0 text-center fs-5 fs-md-4">
                   {car.marca} {car.model} - Imagine {activeImage + 1}
                 </h3>
               </div>
@@ -445,39 +454,43 @@ export default function CarClient({ car }: { car: CarDetails }) {
                 {/* Left arrow */}
                 <button
                   onClick={prevImage}
-                  className="btn btn-dark position-absolute top-50 start-0 translate-middle-y ms-3 ms-md-5 rounded-circle d-flex align-items-center justify-content-center"
+                  className="btn btn-dark position-absolute top-50 start-0 translate-middle-y ms-2 ms-md-4 rounded-circle d-flex align-items-center justify-content-center"
                   style={{ 
-                    width: '60px', 
-                    height: '60px', 
+                    width: '50px', 
+                    height: '50px', 
                     padding: 0, 
                     zIndex: 1060,
                     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                    border: '2px solid rgba(255, 255, 255, 0.3)'
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    fontSize: '1.2rem'
                   }}
+                  title="Imaginea anterioară"
                 >
-                  <i className="bi bi-chevron-left fs-4"></i>
+                  <i className="bi bi-chevron-left"></i>
                 </button>
 
                 {/* Right arrow */}
                 <button
                   onClick={nextImage}
-                  className="btn btn-dark position-absolute top-50 end-0 translate-middle-y me-3 me-md-5 rounded-circle d-flex align-items-center justify-content-center"
+                  className="btn btn-dark position-absolute top-50 end-0 translate-middle-y me-2 me-md-4 rounded-circle d-flex align-items-center justify-content-center"
                   style={{ 
-                    width: '60px', 
-                    height: '60px', 
+                    width: '50px', 
+                    height: '50px', 
                     padding: 0, 
                     zIndex: 1060,
                     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                    border: '2px solid rgba(255, 255, 255, 0.3)'
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    fontSize: '1.2rem'
                   }}
+                  title="Imaginea următoare"
                 >
-                  <i className="bi bi-chevron-right fs-4"></i>
+                  <i className="bi bi-chevron-right"></i>
                 </button>
               </>
             )}
 
             {/* Keyboard navigation hint */}
-            <div className="position-absolute bottom-0 end-0 m-3">
+            <div className="position-absolute bottom-0 end-0 m-2 m-md-3">
               <div className="text-white-50 small d-none d-md-block">
                 <i className="bi bi-keyboard me-1"></i>
                 Săgeți pentru navigare, ESC pentru închidere

@@ -46,12 +46,6 @@ const CarCard = memo(function CarCard({ car }: CarCardProps) {
           className="car-image"
           loading="lazy"
           decoding="async"
-          style={{
-            width: '100%',
-            height: '200px',
-            objectFit: 'cover',
-            backgroundColor: 'var(--gray-700)'
-          }}
         />
       </div>
 
