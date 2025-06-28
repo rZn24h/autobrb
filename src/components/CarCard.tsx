@@ -39,7 +39,7 @@ const CarCard = memo(function CarCard({ car }: CarCardProps) {
       }}
     >
       {/* Car Image */}
-      <div className="position-relative">
+      <div className="position-relative card-img-wrapper" style={{overflow: 'hidden', borderTopLeftRadius: 'calc(0.375rem - 1px)', borderTopRightRadius: 'calc(0.375rem - 1px)'}}>
         <img
           src={displayImage}
           alt={`${car.marca} ${car.model}`}

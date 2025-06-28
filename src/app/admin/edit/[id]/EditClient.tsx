@@ -172,7 +172,7 @@ export default function EditClient({ carId }: { carId: string }) {
         }
       }
 
-      // 3. Cover image trebuie să fie una din lista nouă sau gol
+      // 3. Cover image trebuie să fie exact cea selectată de utilizator, dacă există în updatedImages
       let finalCoverImage: string | undefined = car.coverImage;
       if (!updatedImages.includes(finalCoverImage || '')) {
         finalCoverImage = updatedImages.length > 0 ? updatedImages[0] : '';
