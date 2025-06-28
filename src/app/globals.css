@@ -975,5 +975,5 @@ textarea::placeholder {
 }
 
 .car-image[loading] {
-  /* Proprietăți viitoare, momentan nu afectează imaginea */
+  opacity: 0.7;
 }

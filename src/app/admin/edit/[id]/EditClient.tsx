@@ -102,18 +102,15 @@ export default function EditClient({ carId }: { carId: string }) {
 
   const handleNewImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-
     setError('');
     const files = Array.from(e.target.files);
     const processedFiles: File[] = [];
-
-    // Verifică dacă adăugarea noilor imagini nu depășește limita de 12
-    const currentImageCount = car?.images.length || 0;
+    // Verifică dacă adăugarea noilor imagini nu depășește limita de 12 după upload
+    const currentImageCount = (car?.images.filter(img => !img.startsWith('blob:')).length || 0) + newImageFiles.length;
     if (currentImageCount + files.length > 12) {
       setError(`Nu poți adăuga mai mult de 12 imagini în total. Ai deja ${currentImageCount} imagini.`);
       return;
     }
-
     for (const file of files) {
       if (!isImageFile(file)) {
         setError(`Fișierul ${file.name} nu este o imagine validă.`);
@@ -129,7 +126,6 @@ export default function EditClient({ carId }: { carId: string }) {
         return;
       }
     }
-
     if (processedFiles.length > 0) {
       setNewImageFiles(prev => [...prev, ...processedFiles]);
       const newImageUrls = processedFiles.map(file => URL.createObjectURL(file));
@@ -146,26 +142,11 @@ export default function EditClient({ carId }: { carId: string }) {
     setSuccess('');
 
     try {
-      // 1. Șterge imaginile selectate pentru ștergere din storage
-      for (const imageUrl of imagesToDelete) {
-        try {
-          const imageRef = ref(storage, imageUrl);
-          await deleteObject(imageRef);
-        } catch (err) {
-          if (err instanceof Error && 'code' in err && (err as any).code !== 'storage/object-not-found') {
-            console.warn(`Nu s-a putut șterge imaginea: ${imageUrl}`, err);
-          }
-        }
-      }
-
-      // 2. Construiește lista de imagini finale: doar cele rămase + cele noi încărcate
+      // 1. Construiește lista de imagini finale: doar cele rămase + cele noi încărcate
       let updatedImages: string[] = [];
-
-      // Adaugă imaginile rămase (după ștergere)
       if (car.images.length > 0) {
-        updatedImages = car.images.filter(img => !imagesToDelete.includes(img) && !img.startsWith('blob:'));
+        updatedImages = car.images.filter(img => !img.startsWith('blob:'));
       }
-
       // Încarcă noile imagini și adaugă URL-urile lor
       const newImageUrls: string[] = [];
       for (const file of newImageFiles) {
@@ -177,8 +158,21 @@ export default function EditClient({ carId }: { carId: string }) {
       }
       updatedImages.push(...newImageUrls);
 
-      // 3. Dacă nu există imagini rămase și nici noi, lista va fi goală
-      // 4. Cover image trebuie să fie una din lista nouă sau gol
+      // 2. Șterge din storage TOATE imaginile care nu mai sunt în lista finală
+      const initialImages = car.images.concat(imagesToDelete); // imagini inițiale + cele marcate pentru ștergere
+      const imagesToRemove = initialImages.filter(img => !updatedImages.includes(img) && !img.startsWith('blob:'));
+      for (const imageUrl of imagesToRemove) {
+        try {
+          const imageRef = ref(storage, imageUrl);
+          await deleteObject(imageRef);
+        } catch (err) {
+          if (err instanceof Error && 'code' in err && (err as any).code !== 'storage/object-not-found') {
+            console.warn(`Nu s-a putut șterge imaginea: ${imageUrl}`, err);
+          }
+        }
+      }
+
+      // 3. Cover image trebuie să fie una din lista nouă sau gol
       let finalCoverImage: string | undefined = car.coverImage;
       if (!updatedImages.includes(finalCoverImage || '')) {
         finalCoverImage = updatedImages.length > 0 ? updatedImages[0] : '';

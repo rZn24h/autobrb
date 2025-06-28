@@ -35,22 +35,14 @@ export async function updateCar(id: string, data: any, newImages?: File[], cover
   }
   const currentData = carDoc.data();
 
-  // 2. Upload new images if any
-  let imageUrls = [...(currentData.images || [])];
-  if (newImages && newImages.length > 0) {
-    for (const image of newImages) {
-      const storageRef = ref(storage, `cars/${currentData.userId}/${Date.now()}_${image.name}`);
-      await uploadBytes(storageRef, image);
-      const url = await getDownloadURL(storageRef);
-      imageUrls.push(url);
-    }
-  }
+  // 2. Upload new images if any (opțional, dacă folosești newImages)
+  // (poți elimina complet logica cu newImages dacă nu o folosești)
 
-  // 3. Prepare update data
+  // 3. Prepare update data - suprascrie complet images cu data.images
   const updateData = {
     ...data,
-    images: imageUrls,
-    coverImage: coverImage || data.coverImage || imageUrls[0],
+    images: data.images || [],
+    coverImage: coverImage || data.coverImage || (data.images && data.images[0]) || '',
     updatedAt: Timestamp.now(),
   };
 
