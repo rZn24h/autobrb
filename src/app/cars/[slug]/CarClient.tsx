@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaChevronLeft, FaChevronRight, FaRoad, FaGasPump, FaCog, FaCar, FaTachometerAlt, FaWhatsapp, FaPhone } from 'react-icons/fa';
 import { useConfig } from '@/hooks/useConfig';
 import { useRouter } from 'next/navigation';
@@ -39,6 +39,45 @@ export default function CarClient({ car }: { car: CarDetails }) {
   const handleImageClick = (index: number) => {
     setActiveImage(index);
     setShowLightbox(true);
+  };
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!showLightbox) return;
+      
+      switch (e.key) {
+        case 'Escape':
+          setShowLightbox(false);
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          setActiveImage(prev => (prev === 0 ? images.length - 1 : prev - 1));
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          setActiveImage(prev => (prev === images.length - 1 ? 0 : prev + 1));
+          break;
+      }
+    };
+
+    if (showLightbox) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [showLightbox, images.length]);
+
+  const nextImage = () => {
+    setActiveImage(prev => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  const prevImage = () => {
+    setActiveImage(prev => (prev === 0 ? images.length - 1 : prev - 1));
   };
 
   const formattedPrice = new Intl.NumberFormat('ro-RO').format(car.pret);
@@ -344,29 +383,106 @@ export default function CarClient({ car }: { car: CarDetails }) {
         </div>
       </div>
 
-      {/* Lightbox */}
+      {/* Enhanced Lightbox */}
       {showLightbox && (
         <div 
           className="lightbox position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
           style={{ 
-            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            backgroundColor: 'rgba(0, 0, 0, 0.95)',
             zIndex: 1050
           }}
-          onClick={() => setShowLightbox(false)}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowLightbox(false);
+            }
+          }}
         >
-          <div className="position-relative" style={{ maxWidth: '90vw', maxHeight: '90vh' }}>
-            <img
-              src={car.images[activeImage]}
-              alt={`${car.marca} ${car.model}`}
-              className="img-fluid"
-              style={{ maxHeight: '90vh', objectFit: 'contain' }}
-            />
-            <button 
-              className="btn btn-danger position-absolute top-0 end-0 m-3"
-              onClick={() => setShowLightbox(false)}
-            >
-              <i className="bi bi-x-lg"></i>
-            </button>
+          <div className="position-relative w-100 h-100 d-flex align-items-center justify-content-center">
+            {/* Main image */}
+            <div className="position-relative" style={{ maxWidth: '90vw', maxHeight: '90vh' }}>
+              <img
+                src={car.images[activeImage]}
+                alt={`${car.marca} ${car.model} - Imagine ${activeImage + 1}`}
+                className="img-fluid"
+                style={{ 
+                  maxHeight: '90vh', 
+                  maxWidth: '90vw',
+                  objectFit: 'contain',
+                  borderRadius: '8px'
+                }}
+              />
+              
+              {/* Close button */}
+              <button 
+                className="btn btn-danger position-absolute top-0 end-0 m-3 rounded-circle"
+                style={{ width: '50px', height: '50px', padding: 0, zIndex: 1060 }}
+                onClick={() => setShowLightbox(false)}
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
+
+              {/* Image counter */}
+              <div className="position-absolute top-0 start-0 m-3">
+                <span className="badge bg-dark text-white fs-6 px-3 py-2">
+                  {activeImage + 1} / {car.images.length}
+                </span>
+              </div>
+
+              {/* Image title */}
+              <div className="position-absolute bottom-0 start-0 end-0 p-3" style={{
+                background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+                borderRadius: '0 0 8px 8px'
+              }}>
+                <h3 className="text-white mb-0 text-center">
+                  {car.marca} {car.model} - Imagine {activeImage + 1}
+                </h3>
+              </div>
+            </div>
+
+            {/* Navigation arrows - only show if multiple images */}
+            {images.length > 1 && (
+              <>
+                {/* Left arrow */}
+                <button
+                  onClick={prevImage}
+                  className="btn btn-dark position-absolute top-50 start-0 translate-middle-y ms-3 ms-md-5 rounded-circle d-flex align-items-center justify-content-center"
+                  style={{ 
+                    width: '60px', 
+                    height: '60px', 
+                    padding: 0, 
+                    zIndex: 1060,
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    border: '2px solid rgba(255, 255, 255, 0.3)'
+                  }}
+                >
+                  <i className="bi bi-chevron-left fs-4"></i>
+                </button>
+
+                {/* Right arrow */}
+                <button
+                  onClick={nextImage}
+                  className="btn btn-dark position-absolute top-50 end-0 translate-middle-y me-3 me-md-5 rounded-circle d-flex align-items-center justify-content-center"
+                  style={{ 
+                    width: '60px', 
+                    height: '60px', 
+                    padding: 0, 
+                    zIndex: 1060,
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    border: '2px solid rgba(255, 255, 255, 0.3)'
+                  }}
+                >
+                  <i className="bi bi-chevron-right fs-4"></i>
+                </button>
+              </>
+            )}
+
+            {/* Keyboard navigation hint */}
+            <div className="position-absolute bottom-0 end-0 m-3">
+              <div className="text-white-50 small d-none d-md-block">
+                <i className="bi bi-keyboard me-1"></i>
+                Săgeți pentru navigare, ESC pentru închidere
+              </div>
+            </div>
           </div>
         </div>
       )}

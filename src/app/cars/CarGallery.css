@@ -2,4 +2,82 @@ img {
   width: 100%;
   height: auto;
   object-fit: contain;
+}
+
+/* Lightbox styles */
+.lightbox {
+  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+}
+
+.lightbox img {
+  transition: transform 0.3s ease;
+}
+
+.lightbox img:hover {
+  transform: scale(1.02);
+}
+
+/* Navigation arrows responsive */
+@media (max-width: 768px) {
+  .lightbox .btn {
+    width: 50px !important;
+    height: 50px !important;
+  }
+  
+  .lightbox .btn i {
+    font-size: 1.2rem !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .lightbox .btn {
+    width: 45px !important;
+    height: 45px !important;
+  }
+  
+  .lightbox .btn i {
+    font-size: 1rem !important;
+  }
+}
+
+/* Smooth transitions for image changes */
+.lightbox img {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Thumbnail hover effects */
+.thumbnail-container:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+/* Custom scrollbar for thumbnails */
+.overflow-auto::-webkit-scrollbar {
+  height: 6px;
+}
+
+.overflow-auto::-webkit-scrollbar-track {
+  background: var(--gray-800);
+  border-radius: 3px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb {
+  background: var(--gray-600);
+  border-radius: 3px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
 } 

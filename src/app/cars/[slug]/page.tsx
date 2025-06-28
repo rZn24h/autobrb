@@ -2,6 +2,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/utils/firebase';
 import { notFound } from 'next/navigation';
 import CarClient from './CarClient';
+import '../CarGallery.css';
 
 export async function generateMetadata(props: { params: { slug: string } }) {
   const { slug } = props.params;

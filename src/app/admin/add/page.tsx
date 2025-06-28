@@ -134,8 +134,8 @@ export default function AddCarPage() {
     if (images.length === 0) {
       newErrors.images = 'Trebuie să selectezi cel puțin o imagine';
       isValid = false;
-    } else if (images.length > 8) {
-      newErrors.images = 'Poți selecta maxim 8 imagini';
+    } else if (images.length > 12) {
+      newErrors.images = 'Poți selecta maxim 12 imagini';
       isValid = false;
     }
 
@@ -155,8 +155,8 @@ export default function AddCarPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      if (files.length > 8) {
-        setErrors(prev => ({ ...prev, images: 'Poți selecta maxim 8 imagini' }));
+      if (files.length > 12) {
+        setErrors(prev => ({ ...prev, images: 'Poți selecta maxim 12 imagini' }));
         setImages([]);
         setCoverImageIndex(0);
         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -481,7 +481,7 @@ export default function AddCarPage() {
 
                     {/* Image upload section */}
                     <div className="col-12">
-                      <label className="form-label">Imagini (1-8 imagini) *</label>
+                      <label className="form-label">Imagini (1-12 imagini) *</label>
                       <input
                         type="file"
                         className={`form-control ${errors.images ? 'is-invalid' : ''}`}

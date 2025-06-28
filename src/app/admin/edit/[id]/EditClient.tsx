@@ -107,6 +107,13 @@ export default function EditClient({ carId }: { carId: string }) {
     const files = Array.from(e.target.files);
     const processedFiles: File[] = [];
 
+    // Verifică dacă adăugarea noilor imagini nu depășește limita de 12
+    const currentImageCount = car?.images.length || 0;
+    if (currentImageCount + files.length > 12) {
+      setError(`Nu poți adăuga mai mult de 12 imagini în total. Ai deja ${currentImageCount} imagini.`);
+      return;
+    }
+
     for (const file of files) {
       if (!isImageFile(file)) {
         setError(`Fișierul ${file.name} nu este o imagine validă.`);
@@ -285,7 +292,7 @@ export default function EditClient({ carId }: { carId: string }) {
 
                   {/* Add new images */}
                   <div className="mb-4">
-                    <label className="form-label">Adaugă imagini noi</label>
+                    <label className="form-label">Adaugă imagini noi (maxim 12 imagini în total)</label>
                     <input
                       type="file"
                       className="form-control"
@@ -293,6 +300,9 @@ export default function EditClient({ carId }: { carId: string }) {
                       accept="image/*"
                       onChange={handleNewImages}
                     />
+                    <small className="text-muted">
+                      Ai {car.images.length} imagini din 12 posibile
+                    </small>
                   </div>
 
                   {/* Basic details */}
