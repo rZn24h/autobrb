@@ -1,11 +1,25 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/utils/firebase';
 import Link from 'next/link';
 import { useConfig } from '@/hooks/useConfig';
-import CarCard from '@/components/CarCard';
+import dynamic from 'next/dynamic';
+
+// Lazy load CarCard pentru a reduce bundle size
+const CarCard = dynamic(() => import('@/components/CarCard'), {
+  loading: () => <div className="card h-100 border-0 shadow-sm" style={{ backgroundColor: 'var(--gray-800)' }}>
+    <div className="placeholder-glow">
+      <div className="placeholder" style={{ height: '200px' }}></div>
+      <div className="card-body">
+        <div className="placeholder col-8 mb-2"></div>
+        <div className="placeholder col-6"></div>
+      </div>
+    </div>
+  </div>,
+  ssr: false
+});
 
 type SortOption = 'price-asc' | 'price-desc';
 
@@ -15,6 +29,11 @@ function slugify(str: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
 }
+
+// Cache pentru datele mașinilor
+let carsCache: any[] = [];
+let lastFetchTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minute
 
 export default function HomePage() {
   const [cars, setCars] = useState<any[]>([]);
@@ -29,35 +48,37 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const { config, loading: loadingConfig } = useConfig();
 
-  // Extract unique brands from cars
+  // Extract unique brands from cars - memoized
   const allMarci = useMemo(() => {
     return Array.from(new Set(cars.map(car => car.marca).filter(Boolean))).sort();
   }, [cars]);
 
-  // Filter brands based on search input
-  useEffect(() => {
+  // Filter brands based on search input - memoized
+  const filteredBrands = useMemo(() => {
     const searchTerm = searchMarca.trim().toLowerCase();
     if (searchTerm) {
-      const filtered = allMarci.filter(marca => 
+      return allMarci.filter(marca => 
         marca.toLowerCase().includes(searchTerm)
       );
-      setFilteredMarci(filtered);
-      setShowSuggestions(true);
-    } else {
-      setFilteredMarci(allMarci);
-      setShowSuggestions(false);
     }
+    return allMarci;
   }, [searchMarca, allMarci]);
 
-  // Handle brand selection
-  const handleBrandSelect = (selectedMarca: string) => {
+  // Update filtered brands when search changes
+  useEffect(() => {
+    setFilteredMarci(filteredBrands);
+    setShowSuggestions(!!searchMarca.trim());
+  }, [filteredBrands, searchMarca]);
+
+  // Handle brand selection - memoized
+  const handleBrandSelect = useCallback((selectedMarca: string) => {
     setMarca(selectedMarca);
     setSearchMarca(selectedMarca);
     setShowSuggestions(false);
-  };
+  }, []);
 
-  // Handle input change
-  const handleBrandInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle input change - memoized
+  const handleBrandInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchMarca(value);
     setShowSuggestions(true);
@@ -65,7 +86,7 @@ export default function HomePage() {
       setMarca('');
       setFilteredMarci(allMarci);
     }
-  };
+  }, [allMarci]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -80,24 +101,52 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Fetch cars with caching
   useEffect(() => {
     const fetchCars = async () => {
+      const now = Date.now();
+      
+      // Use cache if it's still valid
+      if (carsCache.length > 0 && (now - lastFetchTime) < CACHE_DURATION) {
+        setCars(carsCache);
+        setFiltered(carsCache);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
-      const q = query(collection(db, 'cars'), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
-      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setCars(data);
-      setFiltered(data);
-      setLoading(false);
+      try {
+        const q = query(collection(db, 'cars'), orderBy('createdAt', 'desc'), limit(50));
+        const snap = await getDocs(q);
+        const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Update cache
+        carsCache = data;
+        lastFetchTime = now;
+        
+        setCars(data);
+        setFiltered(data);
+      } catch (error) {
+        console.error('Error fetching cars:', error);
+        // Fallback to cache if available
+        if (carsCache.length > 0) {
+          setCars(carsCache);
+          setFiltered(carsCache);
+        }
+      } finally {
+        setLoading(false);
+      }
     };
     fetchCars();
   }, []);
 
-  const handleSort = (option: SortOption) => {
+  // Handle sort - memoized
+  const handleSort = useCallback((option: SortOption) => {
     setSortBy(current => current === option ? null : option);
-  };
+  }, []);
 
-  useEffect(() => {
+  // Apply filters and sorting - memoized
+  const filteredAndSortedCars = useMemo(() => {
     let result = cars;
     
     // Apply filters
@@ -118,17 +167,23 @@ export default function HomePage() {
       });
     }
     
-    setFiltered(result);
+    return result;
   }, [marca, pretMin, pretMax, cars, sortBy]);
 
-  const handleReset = () => {
+  // Update filtered cars when filters change
+  useEffect(() => {
+    setFiltered(filteredAndSortedCars);
+  }, [filteredAndSortedCars]);
+
+  // Handle reset - memoized
+  const handleReset = useCallback(() => {
     setMarca('');
     setSearchMarca('');
     setPretMin('');
     setPretMax('');
     setSortBy(null);
     setShowSuggestions(false);
-  };
+  }, []);
 
   return (
     <div className="page-wrapper">
@@ -153,6 +208,7 @@ export default function HomePage() {
               left: 0,
               zIndex: 0
             }}
+            loading="eager"
           />
         ) : (
           <div 
@@ -190,44 +246,42 @@ export default function HomePage() {
 
               {/* Search Section */}
               <div className="search-container mt-4">
-                <div className="row g-3">
+                <div className="search-bar">
                   {/* Brand Search */}
-                  <div className="col-12 col-md-6 col-lg-3">
-                    <div className="position-relative search-bar-item">
-                      <label className="form-label text-white">Marcă</label>
-                      <input
-                        type="text"
-                        className="form-control form-control-lg"
-                        placeholder="Caută marcă..."
-                        value={searchMarca}
-                        onChange={handleBrandInputChange}
-                        onFocus={() => {
-                          setShowSuggestions(true);
-                          if (!searchMarca.trim()) {
-                            setFilteredMarci(allMarci);
-                          }
-                        }}
-                      />
-                      {showSuggestions && (
-                        <div className="brand-suggestions position-absolute w-100 bg-white shadow-sm rounded mt-1">
-                          <ul className="list-unstyled m-0 p-0">
-                            {filteredMarci.map((marca, index) => (
-                              <li
-                                key={index}
-                                onClick={() => handleBrandSelect(marca)}
-                                className="suggestion-item px-3 py-2 cursor-pointer"
-                              >
-                                {marca}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
+                  <div className="search-bar-item">
+                    <label className="form-label text-white">Marcă</label>
+                    <input
+                      type="text"
+                      className="form-control form-control-lg"
+                      placeholder="Caută marcă..."
+                      value={searchMarca}
+                      onChange={handleBrandInputChange}
+                      onFocus={() => {
+                        setShowSuggestions(true);
+                        if (!searchMarca.trim()) {
+                          setFilteredMarci(allMarci);
+                        }
+                      }}
+                    />
+                    {showSuggestions && (
+                      <div className="brand-suggestions">
+                        <ul>
+                          {filteredMarci.map((marca, index) => (
+                            <li
+                              key={index}
+                              onClick={() => handleBrandSelect(marca)}
+                              className="suggestion-item"
+                            >
+                              {marca}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
 
                   {/* Price Range */}
-                  <div className="col-12 col-sm-6 col-lg-3">
+                  <div className="search-bar-item">
                     <label className="form-label text-white">Preț minim</label>
                     <input
                       type="number"
@@ -238,7 +292,7 @@ export default function HomePage() {
                     />
                   </div>
 
-                  <div className="col-12 col-sm-6 col-lg-3">
+                  <div className="search-bar-item">
                     <label className="form-label text-white">Preț maxim</label>
                     <input
                       type="number"
@@ -250,7 +304,7 @@ export default function HomePage() {
                   </div>
 
                   {/* Reset Button */}
-                  <div className="col-12 col-lg-3">
+                  <div className="search-bar-item">
                     <label className="form-label text-white">&nbsp;</label>
                     <button
                       className="btn btn-danger btn-lg w-100"
@@ -300,11 +354,9 @@ export default function HomePage() {
               </div>
             </div>
           ) : filtered.length > 0 ? (
-            <div className="row g-4">
+            <div className="listings-grid">
               {filtered.map((car) => (
-                <div key={car.id} className="col-12 col-sm-6 col-md-6 col-lg-4">
-                  <CarCard car={car} />
-                </div>
+                <CarCard key={car.id} car={car} />
               ))}
             </div>
           ) : (

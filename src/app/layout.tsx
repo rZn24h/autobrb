@@ -8,7 +8,12 @@ import Script from 'next/script';
 import { db } from '@/utils/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
-const inter = Inter({ subsets: ["latin"] });
+// Optimizare font - preload și display swap
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true,
+});
 
 async function getMetadata() {
   try {
@@ -19,6 +24,17 @@ async function getMetadata() {
       return {
         title: data.metaTitle || 'AutoBRB',
         description: data.metaDescription || 'AutoBRB - Platforma ta de încredere pentru mașini',
+        metadataBase: new URL('https://autobrb.vercel.app'),
+        openGraph: {
+          title: data.metaTitle || 'AutoBRB',
+          description: data.metaDescription || 'AutoBRB - Platforma ta de încredere pentru mașini',
+          type: 'website',
+        },
+        twitter: {
+          card: 'summary_large_image',
+          title: data.metaTitle || 'AutoBRB',
+          description: data.metaDescription || 'AutoBRB - Platforma ta de încredere pentru mașini',
+        },
       };
     }
   } catch (error) {
@@ -29,6 +45,7 @@ async function getMetadata() {
   return {
     title: 'AutoBRB',
     description: 'AutoBRB - Platforma ta de încredere pentru mașini',
+    metadataBase: new URL('https://autobrb.vercel.app'),
   };
 }
 
@@ -43,8 +60,21 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="ro">
       <head>
+        {/* Preload critical resources */}
+        <link 
+          rel="preload" 
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" 
+          as="style"
+        />
+        <link 
+          rel="preload" 
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" 
+          as="style"
+        />
+        
+        {/* Load CSS */}
         <link 
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" 
           rel="stylesheet"
@@ -53,6 +83,16 @@ export default function RootLayout({
           rel="stylesheet" 
           href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
         />
+        
+        {/* DNS prefetch pentru Firebase */}
+        <link rel="dns-prefetch" href="//firestore.googleapis.com" />
+        <link rel="dns-prefetch" href="//firebasestorage.googleapis.com" />
+        <link rel="dns-prefetch" href="//identitytoolkit.googleapis.com" />
+        
+        {/* Preconnect pentru Firebase */}
+        <link rel="preconnect" href="https://firestore.googleapis.com" />
+        <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
+        <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
       </head>
       <body className={inter.className}>
         <AuthProvider>
@@ -64,9 +104,12 @@ export default function RootLayout({
             <Footer />
           </div>
         </AuthProvider>
+        
+        {/* Load Bootstrap JS with optimized strategy */}
         <Script
           src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
+          defer
         />
       </body>
     </html>

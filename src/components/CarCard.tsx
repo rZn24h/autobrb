@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { FaRoad, FaGasPump, FaCog, FaTachometerAlt, FaCar } from 'react-icons/fa';
+import { memo } from 'react';
 
 interface CarCardProps {
   car: {
@@ -21,7 +22,7 @@ interface CarCardProps {
   };
 }
 
-export default function CarCard({ car }: CarCardProps) {
+const CarCard = memo(function CarCard({ car }: CarCardProps) {
   const formattedPrice = new Intl.NumberFormat('ro-RO').format(car.pret);
   const formattedKm = new Intl.NumberFormat('ro-RO').format(car.km);
   
@@ -44,6 +45,13 @@ export default function CarCard({ car }: CarCardProps) {
           alt={`${car.marca} ${car.model}`}
           className="car-image"
           loading="lazy"
+          decoding="async"
+          style={{
+            width: '100%',
+            height: '200px',
+            objectFit: 'cover',
+            backgroundColor: 'var(--gray-700)'
+          }}
         />
       </div>
 
@@ -92,4 +100,6 @@ export default function CarCard({ car }: CarCardProps) {
       </div>
     </Link>
   );
-} 
+});
+
+export default CarCard; 
