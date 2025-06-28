@@ -12,6 +12,8 @@ import { processImage, isImageFile } from '@/utils/imageProcessing';
 interface ConfigData {
   nume: string;
   slogan: string;
+  sloganVanzari?: string;
+  sloganInchirieri?: string;
   logoUrl: string;
   bannerImg: string;
   locatie?: string;
@@ -30,6 +32,8 @@ export default function SettingsPage() {
   const [form, setForm] = useState<ConfigData>({
     nume: '',
     slogan: '',
+    sloganVanzari: '',
+    sloganInchirieri: '',
     logoUrl: '',
     bannerImg: '',
     locatie: '',
@@ -61,6 +65,8 @@ export default function SettingsPage() {
           setForm({
             nume: data.nume || '',
             slogan: data.slogan || '',
+            sloganVanzari: data.sloganVanzari || '',
+            sloganInchirieri: data.sloganInchirieri || '',
             logoUrl: data.logoUrl || '',
             bannerImg: data.bannerImg || '',
             locatie: data.locatie || '',
@@ -204,6 +210,28 @@ export default function SettingsPage() {
                 value={form.slogan}
                 onChange={handleChange}
                 required
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label text-dark">Slogan pentru vânzări</label>
+              <input
+                type="text"
+                className="form-control"
+                name="sloganVanzari"
+                value={form.sloganVanzari}
+                onChange={handleChange}
+                placeholder="Slogan pentru pagina de vânzări"
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label text-dark">Slogan pentru închirieri</label>
+              <input
+                type="text"
+                className="form-control"
+                name="sloganInchirieri"
+                value={form.sloganInchirieri}
+                onChange={handleChange}
+                placeholder="Slogan pentru pagina de închirieri"
               />
             </div>
             <div className="col-md-6">

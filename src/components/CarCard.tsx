@@ -20,17 +20,27 @@ interface CarCardProps {
     images: string[];
     coverImage?: string;
   };
+  type?: 'rental' | 'sale';
 }
 
-const CarCard = memo(function CarCard({ car }: CarCardProps) {
+const CarCard = memo(function CarCard({ car, type = 'sale' }: CarCardProps) {
   const formattedPrice = new Intl.NumberFormat('ro-RO').format(car.pret);
   const formattedKm = new Intl.NumberFormat('ro-RO').format(car.km);
   
   const displayImage = car.coverImage || car.images[0];
 
+  const linkHref = type === 'rental' ? `/rentals/${car.id}` : `/cars/${car.id}`;
+
+  let displayPrice = formattedPrice + ' €';
+  if (type === 'rental') {
+    // Show only the first interval if multiple
+    const firstInterval = String(car.pret).split(',')[0]?.trim();
+    displayPrice = firstInterval || String(car.pret);
+  }
+
   return (
     <Link 
-      href={`/cars/${car.id}`} 
+      href={linkHref}
       className="text-decoration-none card h-100 border-0 shadow-sm hover-card"
       style={{
         backgroundColor: 'var(--gray-800)',
@@ -38,6 +48,14 @@ const CarCard = memo(function CarCard({ car }: CarCardProps) {
         transition: 'transform 0.2s ease, box-shadow 0.2s ease'
       }}
     >
+      {/* DEBUG BADGE - only in development */}
+      {process.env.NODE_ENV !== 'production' && (
+        <div style={{ position: 'absolute', top: 0, left: 0, zIndex: 10, background: '#ffeb3b', color: '#222', fontSize: 12, padding: '2px 6px', borderBottomRightRadius: 6 }}>
+          <div><b>ID:</b> {car.id}</div>
+          <div><b>Link:</b> {linkHref}</div>
+          <div><b>Type:</b> {type}</div>
+        </div>
+      )}
       {/* Car Image */}
       <div className="position-relative card-img-wrapper" style={{overflow: 'hidden', borderTopLeftRadius: 'calc(0.375rem - 1px)', borderTopRightRadius: 'calc(0.375rem - 1px)'}}>
         <img
@@ -89,7 +107,7 @@ const CarCard = memo(function CarCard({ car }: CarCardProps) {
         {/* Price */}
         <div className="d-flex justify-content-between align-items-center">
           <span className="text-light">Preț:</span>
-          <span className="price-tag text-light">{formattedPrice} €</span>
+          <span className="price-tag text-light">{displayPrice}</span>
         </div>
       </div>
     </Link>

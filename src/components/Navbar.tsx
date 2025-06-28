@@ -15,6 +15,32 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="navbar navbar-expand-lg fixed-top shadow-sm" style={{ backgroundColor: 'var(--gray-900)' }}>
+      <style jsx global>{`
+        .navbar-toggler {
+          border-color: #dc3545 !important;
+        }
+        .navbar-toggler-icon {
+          background-image: none !important;
+          position: relative;
+          width: 1.5em;
+          height: 1.5em;
+        }
+        .navbar-toggler-icon::before,
+        .navbar-toggler-icon::after,
+        .navbar-toggler-icon div {
+          content: '';
+          display: block;
+          height: 3px;
+          width: 100%;
+          background: #dc3545;
+          margin: 0.3em 0;
+          border-radius: 2px;
+          transition: all 0.3s;
+        }
+        .navbar-toggler-icon div {
+          margin: 0.3em 0;
+        }
+      `}</style>
       <div className="container">
         {/* Logo */}
         <Link href="/" className="navbar-brand d-flex align-items-center">
@@ -63,7 +89,16 @@ const Navbar: React.FC = () => {
                 className={`nav-link px-3 py-2 ${pathname === '/' ? 'active fw-bold text-danger' : 'text-light'}`}
                 style={{ transition: 'color 0.3s ease' }}
               >
-                Acasă
+                Vânzări
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link 
+                href="/rentals" 
+                className={`nav-link px-3 py-2 ${pathname === '/rentals' ? 'active fw-bold text-danger' : 'text-light'}`}
+                style={{ transition: 'color 0.3s ease' }}
+              >
+                Închirieri
               </Link>
             </li>
             <li className="nav-item">

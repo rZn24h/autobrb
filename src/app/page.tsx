@@ -242,7 +242,11 @@ export default function HomePage() {
           ) : (
             <>
               <h1 className="display-4 fw-bold mb-4">{config?.nume || 'Anunțuri Auto'}</h1>
-              <p className="lead mb-0">{config?.slogan || 'Descoperă mașina perfectă pentru tine!'}</p>
+              {config?.sloganVanzari ? (
+                <p className="lead mb-0">{config.sloganVanzari}</p>
+              ) : config?.slogan ? (
+                <p className="lead mb-0">{config.slogan}</p>
+              ) : null}
 
               {/* Search Section */}
               <div className="search-container mt-4">
