@@ -973,3 +973,7 @@ textarea::placeholder {
     display: none !important;
   }
 }
+
+.car-image[loading] {
+  /* Proprietăți viitoare, momentan nu afectează imaginea */
+}

@@ -146,8 +146,7 @@ export default function EditClient({ carId }: { carId: string }) {
     setSuccess('');
 
     try {
-      let updatedImages = car.images;
-
+      // 1. Șterge imaginile selectate pentru ștergere din storage
       for (const imageUrl of imagesToDelete) {
         try {
           const imageRef = ref(storage, imageUrl);
@@ -158,8 +157,16 @@ export default function EditClient({ carId }: { carId: string }) {
           }
         }
       }
-      updatedImages = updatedImages.filter(img => !imagesToDelete.includes(img));
 
+      // 2. Construiește lista de imagini finale: doar cele rămase + cele noi încărcate
+      let updatedImages: string[] = [];
+
+      // Adaugă imaginile rămase (după ștergere)
+      if (car.images.length > 0) {
+        updatedImages = car.images.filter(img => !imagesToDelete.includes(img) && !img.startsWith('blob:'));
+      }
+
+      // Încarcă noile imagini și adaugă URL-urile lor
       const newImageUrls: string[] = [];
       for (const file of newImageFiles) {
         const imageName = `${car.id}-${Date.now()}-${file.name}`;
@@ -168,10 +175,10 @@ export default function EditClient({ carId }: { carId: string }) {
         const url = await getDownloadURL(imageRef);
         newImageUrls.push(url);
       }
-      
-      updatedImages = updatedImages.filter(img => !img.startsWith('blob:'));
       updatedImages.push(...newImageUrls);
 
+      // 3. Dacă nu există imagini rămase și nici noi, lista va fi goală
+      // 4. Cover image trebuie să fie una din lista nouă sau gol
       let finalCoverImage: string | undefined = car.coverImage;
       if (!updatedImages.includes(finalCoverImage || '')) {
         finalCoverImage = updatedImages.length > 0 ? updatedImages[0] : '';
