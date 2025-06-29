@@ -44,9 +44,8 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="navbar navbar-expand-lg fixed-top shadow-lg" style={{ 
-      backgroundColor: 'rgba(17, 24, 39, 0.95)', 
-      backdropFilter: 'blur(10px)',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+      backgroundColor: 'var(--gray-900)',
+      borderBottom: '1px solid var(--gray-800)'
     }}>
       <style jsx global>{`
         .navbar {

@@ -425,19 +425,6 @@ export default function RentalClient({ rental }: { rental: RentalDetails }) {
                   )}
                 </div>
 
-                {/* Location information */}
-                {config?.locatie && (
-                  <div className="mb-3 p-3 rounded" style={{ backgroundColor: 'var(--gray-800)' }}>
-                    <div className="d-flex align-items-center">
-                      <i className="bi bi-geo-alt-fill text-danger me-2"></i>
-                      <div>
-                        <small className="text-light opacity-75 d-block">Locație</small>
-                        <span className="text-light">{config.locatie}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {/* WhatsApp Contact Button */}
                 {whatsappLink && (
                   <a 

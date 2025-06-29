@@ -222,13 +222,24 @@ export default function RentalsPage() {
     setShowSuggestions(false);
   }, []);
 
+  // Loader global doar pentru config (nu și pentru rentals)
+  if (loadingConfig) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+        <div className="spinner-border text-danger" role="status">
+          <span className="visually-hidden">Se încarcă...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-wrapper">
       {/* Hero Section with Banner */}
       <section 
         className="hero-section position-relative d-flex align-items-center justify-content-center text-white"
         style={{
-          minHeight: '50vh',
+          minHeight: '60vh',
           backgroundColor: '#f8f9fa',
           marginTop: '-56px'
         }}
@@ -255,125 +266,168 @@ export default function RentalsPage() {
         )}
         
         {/* Content */}
-        <div className="position-relative text-center px-3">
-          <h1 className="display-4 fw-bold mb-3">
-            Închirieri Auto
-          </h1>
-          {config?.sloganInchirieri ? (
-            <p className="lead mb-0">{config.sloganInchirieri}</p>
-          ) : config?.slogan ? (
-            <p className="lead mb-0">{config.slogan}</p>
-          ) : null}
-        </div>
-      </section>
-
-      {/* Filters Section */}
-      <section className="py-4" style={{ backgroundColor: 'var(--background-main)' }}>
-        <div className="container">
-          <div className="row g-3">
-            {/* Brand Search */}
-            <div className="col-md-4">
-              <div className="search-bar-item position-relative">
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Caută după marcă..."
-                  value={searchMarca}
-                  onChange={handleBrandInputChange}
-                  style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)', color: 'var(--text-light)' }}
-                />
-                {showSuggestions && filteredMarci.length > 0 && (
-                  <div className="position-absolute w-100 mt-1" style={{ zIndex: 1000 }}>
-                    <div className="list-group" style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)' }}>
-                      {filteredMarci.slice(0, 8).map((marca, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          className="list-group-item list-group-item-action text-start"
-                          onClick={() => handleBrandSelect(marca)}
-                          style={{ 
-                            backgroundColor: 'var(--gray-800)', 
-                            border: '1px solid var(--gray-700)', 
-                            color: 'var(--text-light)',
-                            borderTop: index === 0 ? '1px solid var(--gray-700)' : 'none'
-                          }}
-                        >
-                          {marca}
-                        </button>
-                      ))}
-                    </div>
+        <div 
+          className="position-relative text-center px-3 d-flex flex-column align-items-center justify-content-center w-100"
+          style={{
+            zIndex: 20,
+            pointerEvents: 'auto',
+            top: 0,
+          }}
+        >
+          <div 
+            className="d-inline-block px-4 py-3 rounded-4 shadow-lg mb-4"
+            style={{
+              background: 'rgba(30, 30, 30, 0.55)',
+              backdropFilter: 'blur(2px)',
+              boxShadow: '0 4px 32px rgba(0,0,0,0.25)',
+              maxWidth: '700px',
+            }}
+          >
+            <h1 
+              className="display-4 fw-bold mb-3 text-white text-glow"
+              style={{
+                textShadow: '0 2px 16px rgba(0,0,0,0.7), 0 0 8px #fff',
+                letterSpacing: '1px',
+              }}
+            >
+              Închirieri Auto
+            </h1>
+            {config?.sloganInchirieri ? (
+              <p 
+                className="lead mb-0 text-white"
+                style={{
+                  textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 4px #fff',
+                  fontWeight: 500,
+                }}
+              >{config.sloganInchirieri}</p>
+            ) : config?.slogan ? (
+              <p 
+                className="lead mb-0 text-white"
+                style={{
+                  textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 4px #fff',
+                  fontWeight: 500,
+                }}
+              >{config.slogan}</p>
+            ) : null}
+          </div>
+          {/* Bara de căutare refăcută, inspirată de vânzări */}
+          <div className="container mt-4 d-flex flex-column align-items-center justify-content-center">
+            <div className="search-container p-2 p-md-3 rounded-5 shadow mx-auto" style={{ maxWidth: 700, background: 'rgba(255,255,255,0.98)', border: '1.5px solid #ececec', boxShadow: '0 4px 24px rgba(0,0,0,0.07)' }}>
+              <div className="search-bar w-100">
+                {/* Brand Search */}
+                <div className="search-bar-item text-center">
+                  <label className="form-label fw-semibold text-dark mb-1" style={{fontSize: '1rem'}}>Marcă</label>
+                  <div className="position-relative">
+                    <input
+                      type="text"
+                      className="form-control rounded-4 px-3 py-2"
+                      style={{ fontSize: '1rem', minHeight: 38, background: '#f8f9fa', border: '1px solid #e0e0e0' }}
+                      placeholder="Caută marcă..."
+                      value={searchMarca}
+                      onChange={handleBrandInputChange}
+                      onFocus={() => {
+                        setShowSuggestions(true);
+                        if (!searchMarca.trim()) {
+                          setFilteredMarci(allMarci);
+                        }
+                      }}
+                    />
+                    {showSuggestions && filteredMarci.length > 0 && (
+                      <div className="brand-suggestions position-absolute w-100 mt-1" style={{ zIndex: 1000 }}>
+                        <ul className="list-group shadow-sm">
+                          {filteredMarci.slice(0, 8).map((marca, index) => (
+                            <li
+                              key={index}
+                              onClick={() => handleBrandSelect(marca)}
+                              className="list-group-item list-group-item-action"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {marca}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Price Range */}
-            <div className="col-md-3">
-              <input
-                type="number"
-                className="form-control"
-                placeholder="Preț min (€/zi)"
-                value={pretMin}
-                onChange={(e) => setPretMin(e.target.value)}
-                style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)', color: 'var(--text-light)' }}
-              />
-            </div>
-            <div className="col-md-3">
-              <input
-                type="number"
-                className="form-control"
-                placeholder="Preț max (€/zi)"
-                value={pretMax}
-                onChange={(e) => setPretMax(e.target.value)}
-                style={{ backgroundColor: 'var(--gray-800)', border: '1px solid var(--gray-700)', color: 'var(--text-light)' }}
-              />
-            </div>
-
-            {/* Sort and Reset */}
-            <div className="col-md-2">
-              <div className="d-flex gap-2">
-                <button
-                  onClick={() => handleSort('price-asc')}
-                  className={`btn btn-sm ${sortBy === 'price-asc' ? 'btn-danger' : 'btn-outline-danger'}`}
-                  title="Sortează după preț (crescător) - primul preț din card"
-                >
-                  <i className="bi bi-sort-numeric-up"></i>
-                </button>
-                <button
-                  onClick={() => handleSort('price-desc')}
-                  className={`btn btn-sm ${sortBy === 'price-desc' ? 'btn-danger' : 'btn-outline-danger'}`}
-                  title="Sortează după preț (descrescător) - primul preț din card"
-                >
-                  <i className="bi bi-sort-numeric-down"></i>
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="btn btn-sm btn-outline-secondary"
-                  title="Resetează filtrele"
-                >
-                  <i className="bi bi-arrow-clockwise"></i>
-                </button>
+                </div>
+                {/* Price Range */}
+                <div className="search-bar-item text-center">
+                  <label className="form-label fw-semibold text-dark mb-1" style={{fontSize: '1rem'}}>Preț minim</label>
+                  <input
+                    type="number"
+                    className="form-control rounded-4 px-3 py-2"
+                    style={{ fontSize: '1rem', minHeight: 38, background: '#f8f9fa', border: '1px solid #e0e0e0' }}
+                    placeholder="Preț minim"
+                    value={pretMin}
+                    onChange={(e) => setPretMin(e.target.value)}
+                  />
+                </div>
+                <div className="search-bar-item text-center">
+                  <label className="form-label fw-semibold text-dark mb-1" style={{fontSize: '1rem'}}>Preț maxim</label>
+                  <input
+                    type="number"
+                    className="form-control rounded-4 px-3 py-2"
+                    style={{ fontSize: '1rem', minHeight: 38, background: '#f8f9fa', border: '1px solid #e0e0e0' }}
+                    placeholder="Preț maxim"
+                    value={pretMax}
+                    onChange={(e) => setPretMax(e.target.value)}
+                  />
+                </div>
+                {/* Reset Button */}
+                <div className="search-bar-item d-flex align-items-end justify-content-center">
+                  <button
+                    className="btn btn-outline-danger w-100 rounded-4 px-3 py-2"
+                    style={{ fontSize: '1rem', minHeight: 38, border: '1.5px solid #dc3545' }}
+                    onClick={handleReset}
+                  >
+                    Resetează filtrele
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-          
-          {/* Info note about sorting */}
-          {sortBy && (
-            <div className="row mt-2">
-              <div className="col-12">
-                <small className="text-light opacity-75">
-                  <i className="bi bi-info-circle me-1"></i>
-                  Sortarea se face după primul preț afișat în fiecare card (cel mai scurt interval de închiriere).
-                </small>
-              </div>
-            </div>
-          )}
         </div>
       </section>
 
-      {/* Results Section */}
-      <section className="py-4" style={{ backgroundColor: 'var(--background-main)' }}>
+      {/* Butoane de sortare sub bara de căutare, deasupra listei */}
+      <div className="container mt-4 mb-2">
+        <div className="d-flex flex-wrap gap-2 align-items-center justify-content-end">
+          <button
+            onClick={() => handleSort('price-asc')}
+            className={`btn btn-lg ${sortBy === 'price-asc' ? 'btn-danger' : 'btn-outline-danger'} shadow-sm`}
+            title="Sortează după preț (crescător)"
+            style={{ borderRadius: '12px', padding: '12px 20px', minWidth: '120px' }}
+          >
+            <i className="bi bi-sort-numeric-up me-2"></i>
+            Preț ↑
+          </button>
+          <button
+            onClick={() => handleSort('price-desc')}
+            className={`btn btn-lg ${sortBy === 'price-desc' ? 'btn-danger' : 'btn-outline-danger'} shadow-sm`}
+            title="Sortează după preț (descrescător)"
+            style={{ borderRadius: '12px', padding: '12px 20px', minWidth: '120px' }}
+          >
+            <i className="bi bi-sort-numeric-down me-2"></i>
+            Preț ↓
+          </button>
+        </div>
+      </div>
+
+      {/* Results Section - loader doar pe gridul de anunțuri */}
+      <section 
+        className="py-5" 
+        style={{ 
+          backgroundColor: 'var(--background-main)',
+          marginTop: '0px'
+        }}
+      >
         <div className="container">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h2 className="h4 mb-0 text-light">
+              <i className="bi bi-car-front me-2"></i>
+              {filtered.length} mașin{filtered.length === 1 ? 'ă' : filtered.length < 20 ? 'i' : ''} de închiriat
+            </h2>
+          </div>
           {loading ? (
             <div className="text-center py-5">
               <div className="spinner-border text-danger" role="status">
@@ -382,33 +436,62 @@ export default function RentalsPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-5">
-              <h3 className="text-light mb-3">Nu s-au găsit mașini de închiriat</h3>
-              <p className="text-light opacity-75 mb-4">
-                Încearcă să modifici filtrele sau să revii mai târziu.
-              </p>
-              <button onClick={handleReset} className="btn btn-danger">
-                Resetează filtrele
-              </button>
+              <div 
+                className="bg-light rounded-4 p-5 shadow-sm"
+                style={{ backgroundColor: 'var(--gray-800) !important' }}
+              >
+                <i className="bi bi-search display-1 text-muted mb-3"></i>
+                <h3 className="text-light mb-3">Nu s-au găsit mașini de închiriat</h3>
+                <p className="text-light opacity-75 mb-4">
+                  Încearcă să modifici filtrele sau să revii mai târziu.
+                </p>
+                <button 
+                  onClick={handleReset} 
+                  className="btn btn-danger btn-lg px-4"
+                  style={{ borderRadius: '12px' }}
+                >
+                  <i className="bi bi-arrow-clockwise me-2"></i>
+                  Resetează filtrele
+                </button>
+              </div>
             </div>
           ) : (
-            <>
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="h4 mb-0 text-light">
-                  {filtered.length} mașin{filtered.length === 1 ? 'ă' : filtered.length < 20 ? 'i' : ''} de închiriat
-                </h2>
-              </div>
-              
-              <div className="row g-4">
-                {filtered.map((rental) => (
-                  <div key={rental.id} className="col-md-6 col-lg-4">
-                    <CarCard car={rental} />
-                  </div>
-                ))}
-              </div>
-            </>
+            <div className="row g-4">
+              {filtered.map((rental) => (
+                <div key={rental.id} className="col-md-6 col-lg-4">
+                  <CarCard car={rental} />
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </section>
+      <style jsx>{`
+        .search-bar {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 0.7rem;
+        }
+        .search-bar-item {
+          width: 100%;
+        }
+        @media (min-width: 768px) {
+          .search-bar {
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+          }
+        }
+        @media (min-width: 992px) {
+          .search-bar {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            align-items: end;
+          }
+          .search-bar-item {
+            width: 100%;
+          }
+        }
+      `}</style>
     </div>
   );
 } 
