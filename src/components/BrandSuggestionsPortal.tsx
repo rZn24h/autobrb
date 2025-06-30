@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { createPopper, Instance } from '@popperjs/core';
 
 interface BrandSuggestionsPortalProps {
   children: React.ReactNode;
@@ -9,25 +10,39 @@ interface BrandSuggestionsPortalProps {
 
 export default function BrandSuggestionsPortal({ children, anchorRef, visible }: BrandSuggestionsPortalProps) {
   const portalRef = useRef<HTMLDivElement>(null);
+  const popperInstance = useRef<Instance | null>(null);
 
   useEffect(() => {
     if (!anchorRef?.current || !portalRef.current || !visible) return;
-    const anchorRect = anchorRef.current.getBoundingClientRect();
-    const offset = 4; // px între input și dropdown
-    portalRef.current.style.position = 'fixed';
-    portalRef.current.style.left = `${anchorRect.left}px`;
-    portalRef.current.style.top = `${anchorRect.bottom + offset + window.scrollY}px`;
-    portalRef.current.style.width = `${anchorRect.width}px`;
-    portalRef.current.style.minWidth = `${anchorRect.width}px`;
-    portalRef.current.style.maxWidth = '100vw';
-    portalRef.current.style.zIndex = '99999';
-    portalRef.current.style.boxSizing = 'border-box';
+    if (popperInstance.current) {
+      popperInstance.current.destroy();
+      popperInstance.current = null;
+    }
+    popperInstance.current = createPopper(anchorRef.current, portalRef.current, {
+      placement: 'bottom-start',
+      modifiers: [
+        { name: 'offset', options: { offset: [0, 4] } },
+        { name: 'preventOverflow', options: { boundary: 'viewport', padding: 8 } },
+        { name: 'flip', options: { fallbackPlacements: ['top-start'] } },
+        { name: 'customZIndex', enabled: true, phase: 'write', fn: ({ state }) => {
+          if (state.elements && state.elements.popper) {
+            (state.elements.popper as HTMLElement).style.zIndex = '2147483647';
+          }
+        }}
+      ],
+    });
+    return () => {
+      if (popperInstance.current) {
+        popperInstance.current.destroy();
+        popperInstance.current = null;
+      }
+    };
   }, [anchorRef, visible]);
 
   if (!visible) return null;
 
   return createPortal(
-    <div ref={portalRef} style={{ pointerEvents: visible ? 'auto' : 'none', width: '100%' }}>
+    <div ref={portalRef} style={{ pointerEvents: visible ? 'auto' : 'none', width: anchorRef.current?.offsetWidth || '100%', zIndex: 2147483647 }}>
       {children}
     </div>,
     document.body

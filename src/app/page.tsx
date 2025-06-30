@@ -86,15 +86,65 @@ export default function HomePage() {
 
   // Update filtered brands when search changes
   useEffect(() => {
+    console.log('Updating filtered brands:', { searchMarca, brandsLength: brands.length }); // Debug
     setFilteredMarci(filteredBrands);
-    setShowSuggestions(!!searchMarca.trim());
-  }, [filteredBrands, searchMarca]);
+    // Only hide suggestions if user explicitly clears the input
+    if (!searchMarca.trim() && showSuggestions) {
+      // Keep suggestions visible but show all brands
+      setFilteredMarci(brands);
+    }
+    console.log('Show suggestions set to:', !!searchMarca.trim()); // Debug
+  }, [filteredBrands, searchMarca, showSuggestions, brands]);
+
+  // Debug effect for suggestions state
+  useEffect(() => {
+    console.log('Suggestions state changed:', { 
+      showSuggestions, 
+      filteredMarciLength: filteredMarci.length,
+      hasSuggestions: showSuggestions && filteredMarci.length > 0
+    }); // Debug
+  }, [showSuggestions, filteredMarci]);
 
   // Handle brand selection - memoized
-  const handleBrandSelect = useCallback((selectedMarca: string) => {
+  const handleBrandSelect = useCallback((selectedMarca: string, event?: React.MouseEvent) => {
+    console.log('=== BRAND SELECTION START ==='); // Debug
+    console.log('Selected marca:', selectedMarca); // Debug
+    
+    // Prevent any default behavior and stop propagation
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      console.log('Event prevented and stopped'); // Debug
+    }
+    
+    // Force immediate update of both states
+    console.log('Setting marca to:', selectedMarca); // Debug
     setMarca(selectedMarca);
+    
+    console.log('Setting searchMarca to:', selectedMarca); // Debug
     setSearchMarca(selectedMarca);
+    
+    console.log('Hiding suggestions'); // Debug
     setShowSuggestions(false);
+    
+    // Force input update by directly setting the value
+    if (inputRef.current) {
+      console.log('Directly setting input value to:', selectedMarca); // Debug
+      inputRef.current.value = selectedMarca;
+    }
+    
+    // Focus input for better UX
+    setTimeout(() => {
+      if (inputRef.current) {
+        console.log('Focusing input and ensuring value'); // Debug
+        inputRef.current.focus();
+        // Ensure the value is set correctly
+        inputRef.current.value = selectedMarca;
+        console.log('Input value after focus:', inputRef.current.value); // Debug
+      }
+    }, 10);
+    
+    console.log('=== BRAND SELECTION END ==='); // Debug
   }, []);
 
   // Handle input change - memoized
@@ -105,6 +155,9 @@ export default function HomePage() {
     if (!value.trim()) {
       setMarca('');
       setFilteredMarci(brands);
+    } else {
+      // Update marca when typing for real-time filtering
+      setMarca(value);
     }
   }, [brands]);
 
@@ -112,7 +165,22 @@ export default function HomePage() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
+      console.log('Click outside detected on:', target.className); // Debug
+      
+      // Don't close if clicking on dropdown items
+      if (target.closest('.brand-suggestions') || target.closest('.suggestion-item')) {
+        console.log('Click on dropdown - not closing'); // Debug
+        return;
+      }
+      
+      // Don't close if clicking on the input itself
+      if (target.closest('input[type="text"]')) {
+        console.log('Click on input - not closing'); // Debug
+        return;
+      }
+      
       if (!target.closest('.search-bar-item')) {
+        console.log('Click outside search bar - closing dropdown'); // Debug
         setShowSuggestions(false);
       }
     };
@@ -167,13 +235,21 @@ export default function HomePage() {
 
   // Filter and sort cars - memoized
   useEffect(() => {
+    console.log('Filtering cars with marca:', marca); // Debug
+    console.log('Total cars:', cars.length); // Debug
+    
     let result = [...cars];
 
     // Filter by brand
     if (marca) {
-      result = result.filter(car => 
-        car.marca && car.marca.toLowerCase().includes(marca.toLowerCase())
-      );
+      result = result.filter(car => {
+        const carMarca = car.marca ? car.marca.toLowerCase() : '';
+        const searchMarca = marca.toLowerCase();
+        const matches = carMarca.includes(searchMarca);
+        console.log(`Car ${car.id}: marca="${car.marca}" matches="${searchMarca}" = ${matches}`); // Debug
+        return matches;
+      });
+      console.log('Cars after brand filter:', result.length); // Debug
     }
 
     // Filter by price range
@@ -195,6 +271,7 @@ export default function HomePage() {
       });
     }
 
+    console.log('Final filtered cars:', result.length); // Debug
     setFiltered(result);
   }, [cars, marca, pretMin, pretMax, sortBy]);
 
@@ -286,28 +363,70 @@ export default function HomePage() {
                         value={searchMarca}
                         onChange={handleBrandInputChange}
                         onFocus={() => {
+                          console.log('Input focused, showing suggestions'); // Debug
                           setShowSuggestions(true);
-                          if (!searchMarca.trim()) {
-                            setFilteredMarci(brands);
-                          }
+                          // Show all brands when input is focused, regardless of current text
+                          setFilteredMarci(brands);
+                        }}
+                        onClick={() => {
+                          console.log('Input clicked, showing suggestions'); // Debug
+                          setShowSuggestions(true);
+                          // Show all brands when input is clicked, regardless of current text
+                          setFilteredMarci(brands);
                         }}
                         disabled={loadingBrands}
                       />
-                      <BrandSuggestionsPortal anchorRef={inputRef} visible={showSuggestions && filteredMarci.length > 0}>
-                        <div className="brand-suggestions">
+                      
+                      {/* Simple dropdown instead of portal for testing */}
+                      {showSuggestions && filteredMarci.length > 0 && (
+                        <div 
+                          className="brand-suggestions"
+                          style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            zIndex: 2147483647,
+                            pointerEvents: 'auto'
+                          }}
+                          onMouseEnter={() => {
+                            console.log('Mouse entered dropdown'); // Debug
+                          }}
+                        >
                           <ul>
-                            {filteredMarci.slice(0, 10).map((marca, index) => (
-                              <li
-                                key={index}
-                                onClick={() => handleBrandSelect(marca)}
-                                className="suggestion-item"
-                              >
-                                {marca}
-                              </li>
-                            ))}
+                            {filteredMarci.slice(0, 10).map((marca, index) => {
+                              console.log('Rendering suggestion item:', marca); // Debug
+                              return (
+                                <li
+                                  key={index}
+                                  onClick={(e) => {
+                                    console.log('Click detected on:', marca); // Debug
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleBrandSelect(marca, e);
+                                  }}
+                                  onMouseDown={(e) => {
+                                    console.log('MouseDown detected on:', marca); // Debug
+                                    e.preventDefault();
+                                  }}
+                                  onMouseEnter={() => {
+                                    console.log('Mouse entered item:', marca); // Debug
+                                  }}
+                                  className="suggestion-item"
+                                  style={{ 
+                                    cursor: 'pointer', 
+                                    userSelect: 'none',
+                                    pointerEvents: 'auto',
+                                    zIndex: 2147483647
+                                  }}
+                                >
+                                  {marca}
+                                </li>
+                              );
+                            })}
                           </ul>
                         </div>
-                      </BrandSuggestionsPortal>
+                      )}
                     </div>
                   </div>
 
