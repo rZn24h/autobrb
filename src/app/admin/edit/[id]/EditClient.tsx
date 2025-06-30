@@ -9,6 +9,7 @@ import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminNavbar from '@/components/AdminNavbar';
 import { updateCar } from '@/utils/apiCars';
 import { processImage, isImageFile } from '@/utils/imageProcessing';
+import { BrandSelector } from '@/components/BrandSelector';
 
 interface CarData {
   id: string;
@@ -83,6 +84,11 @@ export default function EditClient({ carId }: { carId: string }) {
     const { name, value } = e.target;
     if (!car) return;
     setCar({ ...car, [name]: value });
+  };
+
+  const handleBrandChange = (value: string) => {
+    if (!car) return;
+    setCar({ ...car, marca: value });
   };
 
   const handleCoverImageChange = (imageUrl: string) => {
@@ -320,19 +326,16 @@ export default function EditClient({ carId }: { carId: string }) {
                       />
                     </div>
 
-                    <div className="col-md-3">
+                    <div className="col-md-6">
                       <label className="form-label">Marcă</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="marca"
+                      <BrandSelector
                         value={car.marca}
-                        onChange={handleChange}
-                        required
+                        onChange={handleBrandChange}
+                        disabled={saving}
                       />
                     </div>
 
-                    <div className="col-md-3">
+                    <div className="col-md-6">
                       <label className="form-label">Model</label>
                       <input
                         type="text"

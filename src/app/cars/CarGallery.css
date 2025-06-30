@@ -11,11 +11,13 @@ img {
 }
 
 .lightbox img {
-  transition: transform 0.3s ease;
+  /* Elimin transition și animatie de zoom */
+  transition: none !important;
+  animation: none !important;
 }
 
 .lightbox img:hover {
-  transform: scale(1.02);
+  transform: none !important;
 }
 
 /* Navigation arrows responsive */
@@ -41,8 +43,8 @@ img {
   }
 }
 
-/* Smooth transitions for image changes */
-.lightbox img {
+/* Elimin animatia fadeIn */
+/* .lightbox img {
   animation: fadeIn 0.3s ease-in-out;
 }
 
@@ -55,12 +57,12 @@ img {
     opacity: 1;
     transform: scale(1);
   }
-}
+} */
 
 /* Thumbnail hover effects */
 .thumbnail-container:hover {
-  transform: scale(1.05);
-  transition: transform 0.2s ease;
+  transform: none !important;
+  transition: none !important;
 }
 
 /* Custom scrollbar for thumbnails */

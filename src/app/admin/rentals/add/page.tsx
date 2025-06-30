@@ -5,6 +5,7 @@ import { addRental } from '../../../../utils/apiRentals';
 import { useAuth } from '@/contexts/AuthContext';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminNavbar from '@/components/AdminNavbar';
+import { BrandSelector } from '@/components/BrandSelector';
 
 const REGISTER_SECRET = process.env.NEXT_PUBLIC_REGISTER_SECRET || 'adminSecret2025';
 
@@ -155,6 +156,14 @@ export default function AddRentalPage() {
     }
   };
 
+  const handleBrandChange = (value: string) => {
+    setForm(prev => ({ ...prev, marca: value }));
+    // Clear error when user starts typing
+    if (errors.marca) {
+      setErrors(prev => ({ ...prev, marca: undefined }));
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
@@ -297,19 +306,14 @@ export default function AddRentalPage() {
                           {errors.title && <div className="invalid-feedback">{errors.title}</div>}
                         </div>
 
-                        <div className="col-md-3">
+                        <div className="col-md-6">
                           <label htmlFor="marca" className="form-label text-light">Marcă *</label>
-                          <input
-                            type="text"
-                            className={`form-control ${errors.marca ? 'is-invalid' : ''}`}
-                            id="marca"
-                            name="marca"
+                          <BrandSelector
                             value={form.marca}
-                            onChange={handleChange}
-                            placeholder="Ex: BMW"
-                            style={{ backgroundColor: '#fff', color: '#222', border: '1px solid #ced4da' }}
+                            onChange={handleBrandChange}
+                            error={errors.marca}
+                            disabled={loading}
                           />
-                          {errors.marca && <div className="invalid-feedback">{errors.marca}</div>}
                         </div>
 
                         <div className="col-md-3">

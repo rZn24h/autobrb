@@ -8,6 +8,7 @@ import { updateRental } from '@/utils/apiRentals';
 import { useAuth } from '@/contexts/AuthContext';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminNavbar from '@/components/AdminNavbar';
+import { BrandSelector } from '@/components/BrandSelector';
 
 interface FormErrors {
   title?: string;
@@ -226,6 +227,14 @@ export default function EditRentalPage() {
     }
   };
 
+  const handleBrandChange = (value: string) => {
+    setForm(prev => ({ ...prev, marca: value }));
+    // Clear error when user starts typing
+    if (errors.marca) {
+      setErrors(prev => ({ ...prev, marca: undefined }));
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
@@ -416,17 +425,12 @@ export default function EditRentalPage() {
 
                         <div className="col-md-6">
                           <label htmlFor="marca" className="form-label text-light">Marcă *</label>
-                          <input
-                            type="text"
-                            className={`form-control ${errors.marca ? 'is-invalid' : ''}`}
-                            id="marca"
-                            name="marca"
+                          <BrandSelector
                             value={form.marca}
-                            onChange={handleChange}
-                            placeholder="Ex: BMW"
-                            style={{ backgroundColor: '#fff', color: '#222', border: '1px solid #ced4da' }}
+                            onChange={handleBrandChange}
+                            error={errors.marca}
+                            disabled={saving}
                           />
-                          {errors.marca && <div className="invalid-feedback">{errors.marca}</div>}
                         </div>
 
                         <div className="col-md-6">

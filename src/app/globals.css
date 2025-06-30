@@ -296,6 +296,13 @@ main {
 }
 
 /* Search Container Styles */
+.search-container,
+.search-bar,
+.search-bar-item {
+  position: static !important;
+  z-index: auto !important;
+}
+
 .search-container {
   background: rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
@@ -328,11 +335,13 @@ main {
   background: rgba(255, 255, 255, 0.9);
   border: none;
   backdrop-filter: blur(5px);
+  position: relative;
+  z-index: 101;
 }
 
 .search-bar-item .form-control:focus {
   position: relative;
-  z-index: 101;
+  z-index: 102;
   background: white;
   box-shadow: 0 0 0 2px var(--color-primary);
 }
@@ -384,16 +393,24 @@ main {
 /* Brand Suggestions */
 .brand-suggestions {
   position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
+  z-index: 99999 !important;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   margin-top: 0.5rem;
-  z-index: 1000;
-  max-height: 200px;
+  max-height: 250px;
   overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  width: 100% !important;
+  min-width: 0;
+  max-width: 100vw;
+  box-sizing: border-box;
+  /* Ascunde scrollbarul vertical, dar permite scroll */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.brand-suggestions::-webkit-scrollbar {
+  display: none;
 }
 
 .brand-suggestions ul {
@@ -402,36 +419,44 @@ main {
   margin: 0;
 }
 
+.brand-suggestions .list-group {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.brand-suggestions .list-group-item {
+  border: none;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0.75rem 1rem;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.brand-suggestions .list-group-item:last-child {
+  border-bottom: none;
+}
+
+.brand-suggestions .list-group-item:hover {
+  background: #f8f9fa;
+  transform: translateX(2px);
+}
+
 .suggestion-item {
   padding: 0.75rem 1rem;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
   color: #333;
   font-size: 0.95rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
 }
 
 .suggestion-item:hover {
-  background-color: #f8f9fa;
-  color: var(--primary-color);
-}
-
-/* Scrollbar styling for suggestions */
-.brand-suggestions::-webkit-scrollbar {
-  width: 8px;
-}
-
-.brand-suggestions::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 8px;
-}
-
-.brand-suggestions::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 8px;
-}
-
-.brand-suggestions::-webkit-scrollbar-thumb:hover {
-  background: #999;
+  background: #f8f9fa;
+  transform: translateX(2px);
 }
 
 /* Admin Navbar styles */
@@ -983,4 +1008,129 @@ textarea::placeholder {
 
 .car-image[loading] {
   opacity: 0.7;
+}
+
+/* Brand Selector Styles */
+.brand-selector {
+  width: 100%;
+}
+
+.brand-selector .form-check-inline {
+  margin-right: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.brand-selector .form-check-input {
+  margin-right: 0.5rem;
+}
+
+.brand-selector .form-check-label {
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+.brand-selector .input-group {
+  flex-wrap: nowrap;
+}
+
+.brand-selector .input-group .form-control {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.brand-selector .input-group .btn {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  white-space: nowrap;
+}
+
+.brand-selector .alert-sm {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.brand-selector .form-text {
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .brand-selector .form-check-inline {
+    display: block;
+    margin-right: 0;
+    margin-bottom: 0.75rem;
+  }
+  
+  .brand-selector .input-group {
+    flex-direction: column;
+  }
+  
+  .brand-selector .input-group .form-control {
+    border-radius: 0.375rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .brand-selector .input-group .btn {
+    border-radius: 0.375rem;
+    width: 100%;
+  }
+}
+
+/* Dark theme support for rental form */
+.brand-selector .form-check-label.text-light {
+  color: #f8f9fa !important;
+}
+
+.brand-selector .form-select,
+.brand-selector .form-control {
+  background-color: #fff;
+  color: #222;
+  border: 1px solid #ced4da;
+}
+
+.brand-selector .form-select:focus,
+.brand-selector .form-control:focus {
+  background-color: #fff;
+  color: #222;
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.brand-selector .btn-outline-primary {
+  color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.brand-selector .btn-outline-primary:hover {
+  color: #fff;
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.brand-selector .btn-outline-primary:disabled {
+  color: #6c757d;
+  border-color: #6c757d;
+  background-color: transparent;
+}
+
+/* Ensure dropdowns appear above other elements */
+.search-bar-item .position-relative {
+  z-index: 1000;
+}
+
+/* Responsive adjustments for dropdowns */
+@media (max-width: 768px) {
+  .brand-suggestions {
+    max-height: 200px;
+    margin-top: 0.25rem;
+  }
+  
+  .suggestion-item,
+  .brand-suggestions .list-group-item {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.9rem;
+  }
 }

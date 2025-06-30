@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/utils/firebase';
 import Link from 'next/link';
 import { useConfig } from '@/hooks/useConfig';
 import dynamic from 'next/dynamic';
+import { getBrands } from '@/utils/apiBrands';
+import BrandSuggestionsPortal from '@/components/BrandSuggestionsPortal';
 
 // Lazy load CarCard pentru a reduce bundle size
 const CarCard = dynamic(() => import('@/components/CarCard'), {
@@ -46,23 +48,41 @@ export default function HomePage() {
   const [pretMax, setPretMax] = useState('');
   const [sortBy, setSortBy] = useState<SortOption | null>(null);
   const [loading, setLoading] = useState(true);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [loadingBrands, setLoadingBrands] = useState(true);
   const { config, loading: loadingConfig } = useConfig();
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Extract unique brands from cars - memoized
-  const allMarci = useMemo(() => {
-    return Array.from(new Set(cars.map(car => car.marca).filter(Boolean))).sort();
+  // Fetch brands from Firestore
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        setLoadingBrands(true);
+        const brandsData = await getBrands();
+        const brandNames = brandsData.map(brand => brand.name).sort();
+        setBrands(brandNames);
+      } catch (error) {
+        console.error('Error fetching brands:', error);
+        // Fallback to extracting from cars if brands fetch fails
+        const fallbackBrands = Array.from(new Set(cars.map(car => car.marca).filter(Boolean))).sort();
+        setBrands(fallbackBrands);
+      } finally {
+        setLoadingBrands(false);
+      }
+    };
+    fetchBrands();
   }, [cars]);
 
   // Filter brands based on search input - memoized
   const filteredBrands = useMemo(() => {
     const searchTerm = searchMarca.trim().toLowerCase();
     if (searchTerm) {
-      return allMarci.filter(marca => 
+      return brands.filter(marca => 
         marca.toLowerCase().includes(searchTerm)
       );
     }
-    return allMarci;
-  }, [searchMarca, allMarci]);
+    return brands;
+  }, [searchMarca, brands]);
 
   // Update filtered brands when search changes
   useEffect(() => {
@@ -84,9 +104,9 @@ export default function HomePage() {
     setShowSuggestions(true);
     if (!value.trim()) {
       setMarca('');
-      setFilteredMarci(allMarci);
+      setFilteredMarci(brands);
     }
-  }, [allMarci]);
+  }, [brands]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -145,35 +165,38 @@ export default function HomePage() {
     setSortBy(current => current === option ? null : option);
   }, []);
 
-  // Apply filters and sorting - memoized
-  const filteredAndSortedCars = useMemo(() => {
-    let result = cars;
-    
-    // Apply filters
+  // Filter and sort cars - memoized
+  useEffect(() => {
+    let result = [...cars];
+
+    // Filter by brand
     if (marca) {
       result = result.filter(car => 
-        car.marca?.toLowerCase().includes(marca.toLowerCase())
+        car.marca && car.marca.toLowerCase().includes(marca.toLowerCase())
       );
     }
-    if (pretMin) result = result.filter(car => Number(car.pret) >= Number(pretMin));
-    if (pretMax) result = result.filter(car => Number(car.pret) <= Number(pretMax));
-    
-    // Apply sorting if selected
+
+    // Filter by price range
+    if (pretMin) {
+      result = result.filter(car => car.pret >= Number(pretMin));
+    }
+    if (pretMax) {
+      result = result.filter(car => car.pret <= Number(pretMax));
+    }
+
+    // Sort
     if (sortBy) {
-      result = [...result].sort((a, b) => {
-        const priceA = Number(a.pret);
-        const priceB = Number(b.pret);
-        return sortBy === 'price-asc' ? priceA - priceB : priceB - priceA;
+      result.sort((a, b) => {
+        if (sortBy === 'price-asc') {
+          return a.pret - b.pret;
+        } else {
+          return b.pret - a.pret;
+        }
       });
     }
-    
-    return result;
-  }, [marca, pretMin, pretMax, cars, sortBy]);
 
-  // Update filtered cars when filters change
-  useEffect(() => {
-    setFiltered(filteredAndSortedCars);
-  }, [filteredAndSortedCars]);
+    setFiltered(result);
+  }, [cars, marca, pretMin, pretMax, sortBy]);
 
   // Handle reset - memoized
   const handleReset = useCallback(() => {
@@ -254,34 +277,38 @@ export default function HomePage() {
                   {/* Brand Search */}
                   <div className="search-bar-item">
                     <label className="form-label text-white">Marcă</label>
-                    <input
-                      type="text"
-                      className="form-control form-control-lg"
-                      placeholder="Caută marcă..."
-                      value={searchMarca}
-                      onChange={handleBrandInputChange}
-                      onFocus={() => {
-                        setShowSuggestions(true);
-                        if (!searchMarca.trim()) {
-                          setFilteredMarci(allMarci);
-                        }
-                      }}
-                    />
-                    {showSuggestions && (
-                      <div className="brand-suggestions">
-                        <ul>
-                          {filteredMarci.map((marca, index) => (
-                            <li
-                              key={index}
-                              onClick={() => handleBrandSelect(marca)}
-                              className="suggestion-item"
-                            >
-                              {marca}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    <div className="position-relative">
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        className="form-control form-control-lg"
+                        placeholder={loadingBrands ? "Se încarcă mărcile..." : "Caută marcă..."}
+                        value={searchMarca}
+                        onChange={handleBrandInputChange}
+                        onFocus={() => {
+                          setShowSuggestions(true);
+                          if (!searchMarca.trim()) {
+                            setFilteredMarci(brands);
+                          }
+                        }}
+                        disabled={loadingBrands}
+                      />
+                      <BrandSuggestionsPortal anchorRef={inputRef} visible={showSuggestions && filteredMarci.length > 0}>
+                        <div className="brand-suggestions">
+                          <ul>
+                            {filteredMarci.slice(0, 10).map((marca, index) => (
+                              <li
+                                key={index}
+                                onClick={() => handleBrandSelect(marca)}
+                                className="suggestion-item"
+                              >
+                                {marca}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </BrandSuggestionsPortal>
+                    </div>
                   </div>
 
                   {/* Price Range */}

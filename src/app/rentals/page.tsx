@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/utils/firebase';
 import Link from 'next/link';
 import { useConfig } from '@/hooks/useConfig';
 import dynamic from 'next/dynamic';
 import React from 'react';
+import { getBrands } from '@/utils/apiBrands';
+import BrandSuggestionsPortal from '@/components/BrandSuggestionsPortal';
 
 // Lazy load CarCard pentru a reduce bundle size
 const CarCard = dynamic(
@@ -75,23 +77,41 @@ export default function RentalsPage() {
   const [pretMax, setPretMax] = useState('');
   const [sortBy, setSortBy] = useState<SortOption | null>(null);
   const [loading, setLoading] = useState(true);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [loadingBrands, setLoadingBrands] = useState(true);
   const { config, loading: loadingConfig } = useConfig();
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Extract unique brands from rentals - memoized
-  const allMarci = useMemo(() => {
-    return Array.from(new Set(rentals.map(rental => rental.marca).filter(Boolean))).sort();
+  // Fetch brands from Firestore
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        setLoadingBrands(true);
+        const brandsData = await getBrands();
+        const brandNames = brandsData.map(brand => brand.name).sort();
+        setBrands(brandNames);
+      } catch (error) {
+        console.error('Error fetching brands:', error);
+        // Fallback to extracting from rentals if brands fetch fails
+        const fallbackBrands = Array.from(new Set(rentals.map(rental => rental.marca).filter(Boolean))).sort();
+        setBrands(fallbackBrands);
+      } finally {
+        setLoadingBrands(false);
+      }
+    };
+    fetchBrands();
   }, [rentals]);
 
   // Filter brands based on search input - memoized
   const filteredBrands = useMemo(() => {
     const searchTerm = searchMarca.trim().toLowerCase();
     if (searchTerm) {
-      return allMarci.filter(marca => 
+      return brands.filter(marca => 
         marca.toLowerCase().includes(searchTerm)
       );
     }
-    return allMarci;
-  }, [searchMarca, allMarci]);
+    return brands;
+  }, [searchMarca, brands]);
 
   // Update filtered brands when search changes
   useEffect(() => {
@@ -113,9 +133,9 @@ export default function RentalsPage() {
     setShowSuggestions(true);
     if (!value.trim()) {
       setMarca('');
-      setFilteredMarci(allMarci);
+      setFilteredMarci(brands);
     }
-  }, [allMarci]);
+  }, [brands]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -319,21 +339,23 @@ export default function RentalsPage() {
                   <label className="form-label fw-semibold text-dark mb-1" style={{fontSize: '1rem'}}>Marcă</label>
                   <div className="position-relative">
                     <input
+                      ref={inputRef}
                       type="text"
                       className="form-control rounded-4 px-3 py-2"
                       style={{ fontSize: '1rem', minHeight: 38, background: '#f8f9fa', border: '1px solid #e0e0e0' }}
-                      placeholder="Caută marcă..."
+                      placeholder={loadingBrands ? "Se încarcă mărcile..." : "Caută marcă..."}
                       value={searchMarca}
                       onChange={handleBrandInputChange}
                       onFocus={() => {
                         setShowSuggestions(true);
                         if (!searchMarca.trim()) {
-                          setFilteredMarci(allMarci);
+                          setFilteredMarci(brands);
                         }
                       }}
+                      disabled={loadingBrands}
                     />
-                    {showSuggestions && filteredMarci.length > 0 && (
-                      <div className="brand-suggestions position-absolute w-100 mt-1" style={{ zIndex: 1000 }}>
+                    <BrandSuggestionsPortal anchorRef={inputRef} visible={showSuggestions && filteredMarci.length > 0}>
+                      <div className="brand-suggestions">
                         <ul className="list-group shadow-sm">
                           {filteredMarci.slice(0, 8).map((marca, index) => (
                             <li
@@ -347,7 +369,7 @@ export default function RentalsPage() {
                           ))}
                         </ul>
                       </div>
-                    )}
+                    </BrandSuggestionsPortal>
                   </div>
                 </div>
                 {/* Price Range */}
