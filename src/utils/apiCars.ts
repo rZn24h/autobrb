@@ -3,27 +3,33 @@ import { collection, addDoc, Timestamp, deleteDoc, doc, getDoc, updateDoc } from
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 export async function addCar(data: any, images: File[], userId: string, coverImageIndex: number) {
-  // 1. Upload images to Firebase Storage and get URLs
-  const imageUrls: string[] = [];
-  for (const image of images) {
-    const storageRef = ref(storage, `cars/${userId}/${Date.now()}_${image.name}`);
-    await uploadBytes(storageRef, image);
-    const url = await getDownloadURL(storageRef);
-    imageUrls.push(url);
+  try {
+    // 1. Upload images to Firebase Storage and get URLs
+    const imageUrls: string[] = [];
+    for (let i = 0; i < images.length; i++) {
+      const image = images[i];
+      const storageRef = ref(storage, `cars/${userId}/${Date.now()}_${i}_${image.name}`);
+      await uploadBytes(storageRef, image);
+      const url = await getDownloadURL(storageRef);
+      imageUrls.push(url);
+    }
+
+    // 2. Prepare car data
+    const carData = {
+      ...data,
+      images: imageUrls,
+      userId,
+      createdAt: Timestamp.now(),
+      coverImage: imageUrls[coverImageIndex] || imageUrls[0],
+    };
+
+    // 3. Save to Firestore
+    const docRef = await addDoc(collection(db, 'cars'), carData);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error in addCar function:', error);
+    throw error;
   }
-
-  // 2. Prepare car data
-  const carData = {
-    ...data,
-    images: imageUrls,
-    userId,
-    createdAt: Timestamp.now(),
-    coverImage: imageUrls[coverImageIndex] || imageUrls[0],
-  };
-
-  // 3. Save to Firestore
-  const docRef = await addDoc(collection(db, 'cars'), carData);
-  return docRef.id;
 }
 
 export async function updateCar(id: string, data: any, newImages?: File[], coverImage?: string) {

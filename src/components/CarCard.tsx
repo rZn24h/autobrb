@@ -48,14 +48,6 @@ const CarCard = memo(function CarCard({ car, type = 'sale' }: CarCardProps) {
         transition: 'transform 0.2s ease, box-shadow 0.2s ease'
       }}
     >
-      {/* DEBUG BADGE - only in development */}
-      {process.env.NODE_ENV !== 'production' && (
-        <div style={{ position: 'absolute', top: 0, left: 0, zIndex: 10, background: '#ffeb3b', color: '#222', fontSize: 12, padding: '2px 6px', borderBottomRightRadius: 6 }}>
-          <div><b>ID:</b> {car.id}</div>
-          <div><b>Link:</b> {linkHref}</div>
-          <div><b>Type:</b> {type}</div>
-        </div>
-      )}
       {/* Car Image */}
       <div className="position-relative card-img-wrapper" style={{overflow: 'hidden', borderTopLeftRadius: 'calc(0.375rem - 1px)', borderTopRightRadius: 'calc(0.375rem - 1px)'}}>
         <img

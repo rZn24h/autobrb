@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { addCar } from '@/utils/apiCars';
 import { useAuth } from '@/contexts/AuthContext';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
@@ -65,6 +66,7 @@ const initialFormState = {
 
 export default function AddCarPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [form, setForm] = useState(initialFormState);
   const [images, setImages] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
@@ -73,6 +75,30 @@ export default function AddCarPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [coverImageIndex, setCoverImageIndex] = useState(0);
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+
+  // Cleanup timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      // Cleanup image URLs
+      imageUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [timeoutId, imageUrls]);
+
+  // Manage image URLs
+  useEffect(() => {
+    const urls = images.map(img => URL.createObjectURL(img));
+    setImageUrls(urls);
+    
+    // Cleanup URLs when component unmounts or images change
+    return () => {
+      urls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [images]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -167,6 +193,7 @@ export default function AddCarPage() {
       if (files.length > 12) {
         setErrors(prev => ({ ...prev, images: 'Poți selecta maxim 12 imagini' }));
         setImages([]);
+        setImageUrls([]);
         setCoverImageIndex(0);
         if (fileInputRef.current) fileInputRef.current.value = '';
       } else {
@@ -207,16 +234,28 @@ export default function AddCarPage() {
       // Reset form
       setForm(initialFormState);
       setImages([]);
+      setImageUrls([]);
       setCoverImageIndex(0);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
       
-      // Auto-dismiss success message after 3 seconds
-      setTimeout(() => {
+      // Clear any existing timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      
+      // Auto-dismiss success message after 3 seconds and offer navigation
+      const newTimeoutId = setTimeout(() => {
         setSuccess('');
+        // Optionally redirect to the cars list after success
+        if (window.confirm('Anunțul a fost adăugat cu succes! Vrei să vezi lista de anunțuri?')) {
+          router.push('/admin/list');
+        }
       }, 3000);
+      setTimeoutId(newTimeoutId);
     } catch (err) {
+      console.error('Error adding car:', err);
       setError(err instanceof Error ? err.message : 'A apărut o eroare la adăugarea mașinii');
     } finally {
       setLoading(false);
@@ -235,6 +274,31 @@ export default function AddCarPage() {
             {success && (
               <div className="alert alert-success alert-dismissible fade show" role="alert">
                 {success}
+                <div className="mt-2">
+                  <button 
+                    type="button" 
+                    className="btn btn-outline-success btn-sm me-2"
+                    onClick={() => router.push('/admin/list')}
+                  >
+                    Vezi lista de anunțuri
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn btn-outline-primary btn-sm"
+                    onClick={() => {
+                      setSuccess('');
+                      setForm(initialFormState);
+                      setImages([]);
+                      setImageUrls([]);
+                      setCoverImageIndex(0);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
+                  >
+                    Adaugă alt anunț
+                  </button>
+                </div>
                 <button type="button" className="btn-close" onClick={() => setSuccess('')}></button>
               </div>
             )}
@@ -501,44 +565,41 @@ export default function AddCarPage() {
                       {/* Image previews and cover image selection */}
                       {images.length > 0 && (
                         <div className="d-flex flex-wrap gap-3 mt-3">
-                          {images.map((img, idx) => {
-                            const url = URL.createObjectURL(img);
-                            return (
-                              <div key={idx} className="position-relative" style={{ width: 100 }}>
-                                <img 
-                                  src={url} 
-                                  alt={`thumb-${idx}`} 
-                                  style={{ 
-                                    width: 100, 
-                                    height: 70, 
-                                    objectFit: 'cover', 
-                                    borderRadius: 6, 
-                                    border: idx === coverImageIndex ? '2px solid #0d6efd' : '2px solid #eee',
-                                    cursor: 'pointer',
-                                    opacity: idx === coverImageIndex ? 1 : 0.7
-                                  }} 
-                                  onClick={() => setCoverImageIndex(idx)} 
+                          {images.map((img, idx) => (
+                            <div key={idx} className="position-relative" style={{ width: 100 }}>
+                              <img 
+                                src={imageUrls[idx]} 
+                                alt={`thumb-${idx}`} 
+                                style={{ 
+                                  width: 100, 
+                                  height: 70, 
+                                  objectFit: 'cover', 
+                                  borderRadius: 6, 
+                                  border: idx === coverImageIndex ? '2px solid #0d6efd' : '2px solid #eee',
+                                  cursor: 'pointer',
+                                  opacity: idx === coverImageIndex ? 1 : 0.7
+                                }} 
+                                onClick={() => setCoverImageIndex(idx)} 
+                              />
+                              <div style={{ position: 'absolute', top: 4, right: 4 }}>
+                                <input 
+                                  type="radio" 
+                                  name="coverImage" 
+                                  checked={coverImageIndex === idx} 
+                                  onChange={() => setCoverImageIndex(idx)} 
                                 />
-                                <div style={{ position: 'absolute', top: 4, right: 4 }}>
-                                  <input 
-                                    type="radio" 
-                                    name="coverImage" 
-                                    checked={coverImageIndex === idx} 
-                                    onChange={() => setCoverImageIndex(idx)} 
-                                  />
-                                </div>
-                                <div className="text-center mt-1">
-                                  <button 
-                                    type="button" 
-                                    className={`btn btn-sm ${coverImageIndex === idx ? 'btn-primary' : 'btn-outline-secondary'}`}
-                                    onClick={() => setCoverImageIndex(idx)}
-                                  >
-                                    {coverImageIndex === idx ? 'Imagine principală' : 'Setează ca principală'}
-                                  </button>
-                                </div>
                               </div>
-                            );
-                          })}
+                              <div className="text-center mt-1">
+                                <button 
+                                  type="button" 
+                                  className={`btn btn-sm ${coverImageIndex === idx ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                  onClick={() => setCoverImageIndex(idx)}
+                                >
+                                  {coverImageIndex === idx ? 'Imagine principală' : 'Setează ca principală'}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
