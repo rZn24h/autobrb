@@ -3,16 +3,22 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import Script from 'next/script';
 import { db } from '@/utils/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import dynamic from 'next/dynamic';
+
+// Lazy load Footer component
+const Footer = dynamic(() => import('@/components/Footer'), {
+  loading: () => <div style={{ height: '200px' }}></div>,
+});
 
 // Optimizare font - preload și display swap
 const inter = Inter({ 
   subsets: ["latin"],
   display: 'swap',
   preload: true,
+  variable: '--font-inter',
 });
 
 async function getMetadata() {
@@ -62,6 +68,10 @@ export default function RootLayout({
   return (
     <html lang="ro">
       <head>
+        {/* Preconnect for Google Fonts */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        
         {/* Preload critical resources */}
         <link 
           rel="preload" 
@@ -94,7 +104,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
         <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} ${inter.variable}`}>
         <AuthProvider>
           <div className="background-wrapper min-vh-100 d-flex flex-column">
             <Navbar />

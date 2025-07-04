@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit, startAfter } from 'firebase/firestore';
 import { db } from '@/utils/firebase';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useConfig } from '@/hooks/useConfig';
 import dynamic from 'next/dynamic';
 import React from 'react';
@@ -31,6 +32,11 @@ const CarCard = dynamic(
 );
 
 type SortOption = 'price-asc' | 'price-desc';
+
+// Pagination constants
+const INITIAL_LIMIT = 6;
+const LOAD_MORE_LIMIT = 6;
+const PRIORITY_IMAGES_COUNT = 5; // Primele 5 anunțuri cu încărcare prioritară
 
 function slugify(str: string) {
   return str
@@ -77,10 +83,14 @@ export default function RentalsPage() {
   const [pretMax, setPretMax] = useState('');
   const [sortBy, setSortBy] = useState<SortOption | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [brands, setBrands] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(true);
   const { config, loading: loadingConfig } = useConfig();
   const inputRef = useRef<HTMLInputElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch brands from Firestore
   useEffect(() => {
@@ -150,44 +160,80 @@ export default function RentalsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch rentals with caching
+  // Fetch initial rentals
   useEffect(() => {
     const fetchRentals = async () => {
-      const now = Date.now();
-      
-      // Use cache if it's still valid
-      if (rentalsCache.length > 0 && (now - lastFetchTime) < CACHE_DURATION) {
-        setRentals(rentalsCache);
-        setFiltered(rentalsCache);
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       try {
-        const q = query(collection(db, 'rentals'), orderBy('createdAt', 'desc'), limit(50));
+        const q = query(collection(db, 'rentals'), orderBy('createdAt', 'desc'), limit(INITIAL_LIMIT));
         const snap = await getDocs(q);
         const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // Update cache
-        rentalsCache = data;
-        lastFetchTime = now;
-        
         setRentals(data);
         setFiltered(data);
+        setHasMore(snap.docs.length === INITIAL_LIMIT);
       } catch (error) {
         console.error('Error fetching rentals:', error);
-        // Fallback to cache if available
-        if (rentalsCache.length > 0) {
-          setRentals(rentalsCache);
-          setFiltered(rentalsCache);
-        }
       } finally {
         setLoading(false);
       }
     };
     fetchRentals();
   }, []);
+
+  // Load more rentals function
+  const loadMoreRentals = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    
+    setLoadingMore(true);
+    try {
+      const lastDoc = rentals[rentals.length - 1];
+      if (!lastDoc) return;
+      
+      const q = query(
+        collection(db, 'rentals'),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastDoc.createdAt),
+        limit(LOAD_MORE_LIMIT)
+      );
+      
+      const snap = await getDocs(q);
+      const newRentals = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      if (newRentals.length > 0) {
+        setRentals(prevRentals => [...prevRentals, ...newRentals]);
+        setHasMore(newRentals.length === LOAD_MORE_LIMIT);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error loading more rentals:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [rentals, loadingMore, hasMore]);
+
+  // Setup intersection observer for infinite scroll
+  useEffect(() => {
+    if (!loadMoreRef.current) return;
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMoreRentals();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observerRef.current.observe(loadMoreRef.current);
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMore, loadingMore, loadMoreRentals]);
 
   // Handle sort - memoized
   const handleSort = useCallback((option: SortOption) => {
@@ -342,7 +388,7 @@ export default function RentalsPage() {
                       ref={inputRef}
                       type="text"
                       className="form-control rounded-4 px-3 py-2"
-                      style={{ fontSize: '1rem', minHeight: 38, background: '#f8f9fa', border: '1px solid #e0e0e0' }}
+                      style={{ fontSize: '1rem', minHeight: 38, background: '#ffffff', border: '1px solid #e0e0e0', color: '#000000' }}
                       placeholder={loadingBrands ? "Se încarcă mărcile..." : "Caută marcă..."}
                       value={searchMarca}
                       onChange={handleBrandInputChange}
@@ -378,7 +424,7 @@ export default function RentalsPage() {
                   <input
                     type="number"
                     className="form-control rounded-4 px-3 py-2"
-                    style={{ fontSize: '1rem', minHeight: 38, background: '#f8f9fa', border: '1px solid #e0e0e0' }}
+                    style={{ fontSize: '1rem', minHeight: 38, background: '#ffffff', border: '1px solid #e0e0e0', color: '#000000' }}
                     placeholder="Preț minim"
                     value={pretMin}
                     onChange={(e) => setPretMin(e.target.value)}
@@ -389,7 +435,7 @@ export default function RentalsPage() {
                   <input
                     type="number"
                     className="form-control rounded-4 px-3 py-2"
-                    style={{ fontSize: '1rem', minHeight: 38, background: '#f8f9fa', border: '1px solid #e0e0e0' }}
+                    style={{ fontSize: '1rem', minHeight: 38, background: '#ffffff', border: '1px solid #e0e0e0', color: '#000000' }}
                     placeholder="Preț maxim"
                     value={pretMax}
                     onChange={(e) => setPretMax(e.target.value)}
@@ -478,13 +524,28 @@ export default function RentalsPage() {
               </div>
             </div>
           ) : (
-            <div className="row g-4">
-              {filtered.map((rental) => (
-                <div key={rental.id} className="col-md-6 col-lg-4">
-                  <CarCard car={rental} />
+            <>
+              <div className="row g-4">
+                {filtered.map((rental, index) => (
+                  <div key={rental.id} className="col-md-6 col-lg-4">
+                    <CarCard car={rental} priority={index < PRIORITY_IMAGES_COUNT} />
+                  </div>
+                ))}
+              </div>
+              
+              {/* Load More Trigger */}
+              {hasMore && (
+                <div ref={loadMoreRef} className="text-center py-4">
+                  {loadingMore ? (
+                    <div className="spinner-border text-danger" role="status">
+                      <span className="visually-hidden">Se încarcă mai multe anunțuri...</span>
+                    </div>
+                  ) : (
+                    <div className="text-muted">Derulează pentru mai multe anunțuri</div>
+                  )}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -511,6 +572,31 @@ export default function RentalsPage() {
           }
           .search-bar-item {
             width: 100%;
+          }
+        }
+        :global(.spec-icon) {
+          color: #dc3545 !important;
+        }
+        :global(.price-tag) {
+          color: #dc3545 !important;
+          font-weight: 700;
+        }
+        :global(.specs-grid) {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.7rem 1.5rem;
+          justify-items: center;
+          align-items: center;
+          padding: 8px 0 8px 0;
+        }
+        @media (min-width: 600px) {
+          :global(.specs-grid) {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.2rem 2.2rem;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 8px 0 8px 0;
           }
         }
       `}</style>

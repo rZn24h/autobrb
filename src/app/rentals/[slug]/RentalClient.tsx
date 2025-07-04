@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { FaChevronLeft, FaChevronRight, FaRoad, FaGasPump, FaCog, FaCar, FaTachometerAlt, FaWhatsapp, FaPhone } from 'react-icons/fa';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { FaChevronLeft, FaChevronRight, FaRoad, FaGasPump, FaCog, FaCar, FaTachometerAlt, FaWhatsapp, FaPhone, FaCalendar, FaBolt } from 'react-icons/fa';
 import { useConfig } from '@/hooks/useConfig';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface RentalDetails {
   id: string;
@@ -26,6 +27,21 @@ interface RentalDetails {
   coverImage?: string;
   contact?: string;
   locatie?: string;
+}
+
+function formatPhone(phone: string) {
+  if (!phone) return '';
+  // Extrage doar cifrele
+  const digits = phone.replace(/\D/g, '');
+  // Dacă deja începe cu 40, nu adăuga încă un +40
+  let formatted = digits.startsWith('40') ? digits : '40' + digits.replace(/^0/, '');
+  // Format: +40 0XXX XXX XXX sau +40 7XX XXX XXX
+  if (formatted.length === 11) {
+    return `+${formatted.slice(0,2)} 0${formatted.slice(2,5)} ${formatted.slice(5,8)} ${formatted.slice(8)}`;
+  } else if (formatted.length === 12) {
+    return `+${formatted.slice(0,2)} ${formatted.slice(2,5)} ${formatted.slice(5,8)} ${formatted.slice(8)}`;
+  }
+  return phone;
 }
 
 export default function RentalClient({ rental }: { rental: RentalDetails }) {
@@ -151,6 +167,116 @@ export default function RentalClient({ rental }: { rental: RentalDetails }) {
             text-align: center;
           }
         }
+
+        /* Thumbnails responsive */
+        .row.g-2.mb-3 {
+          display: flex;
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          gap: 0.5rem;
+          margin-bottom: 1rem;
+        }
+        .row.g-2.mb-3 .col-3,
+        .row.g-2.mb-3 .col-md-2 {
+          flex: 0 0 auto;
+          width: 80px;
+          max-width: 80px;
+        }
+        @media (min-width: 768px) {
+          .row.g-2.mb-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            overflow-x: unset;
+            gap: 0.5rem;
+          }
+          .row.g-2.mb-3 .col-3,
+          .row.g-2.mb-3 .col-md-2 {
+            width: 100%;
+            max-width: unset;
+          }
+        }
+        .position-relative[style*='cursor: pointer'] {
+          border-radius: 10px;
+          border: 2px solid transparent;
+          transition: border 0.2s;
+        }
+        .position-relative[style*='cursor: pointer'][data-active='true'] {
+          border: 2px solid #dc3545;
+          box-shadow: 0 0 0 2px #fff, 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .main-image-wrapper img {
+          max-width: 100%;
+          width: 100%;
+          height: auto;
+          border-radius: 12px;
+          cursor: pointer;
+        }
+        @media (min-width: 768px) {
+          .main-image-wrapper img {
+            height: 400px;
+            object-fit: cover;
+          }
+        }
+        /* Lightbox styles */
+        .lightbox {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.95);
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+        }
+        .lightbox-img {
+          max-width: 98vw;
+          max-height: 80vh;
+          border-radius: 16px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+        }
+        .lightbox-close {
+          position: absolute;
+          top: 24px;
+          right: 32px;
+          font-size: 2.2rem;
+          color: #fff;
+          cursor: pointer;
+          z-index: 10001;
+        }
+        .lightbox-arrows {
+          position: absolute;
+          top: 50%;
+          left: 0; right: 0;
+          display: flex;
+          justify-content: space-between;
+          width: 100vw;
+          pointer-events: none;
+        }
+        .lightbox-arrow {
+          pointer-events: all;
+          font-size: 2.5rem;
+          color: #fff;
+          background: rgba(0,0,0,0.3);
+          border-radius: 50%;
+          padding: 0.3em 0.5em;
+          margin: 0 1.5vw;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        .lightbox-arrow:hover {
+          background: #dc3545;
+        }
+        @media (max-width: 600px) {
+          .lightbox-img {
+            max-width: 98vw;
+            max-height: 60vh;
+          }
+          .lightbox-close {
+            top: 12px;
+            right: 12px;
+            font-size: 1.7rem;
+          }
+        }
       `}</style>
       
       {/* Back button */}
@@ -166,212 +292,116 @@ export default function RentalClient({ rental }: { rental: RentalDetails }) {
         <div className="row g-3 g-md-4">
           {/* Left column - Images and car details */}
           <div className="col-lg-8">
-            {/* Main image container */}
-            <div className="card border-0 shadow-sm mb-3 mb-md-4" style={{ backgroundColor: 'var(--gray-900)', border: '1px solid var(--gray-800)' }}>
-              <div className="card-body p-0">
-                <div className="position-relative">
-                  {/* Main image */}
-                  <div className="position-relative" style={{ height: '500px', backgroundColor: 'var(--gray-900)' }}>
-                    <img
-                      src={rental.images[activeImage]}
-                      alt={`${rental.marca} ${rental.model}`}
-                      className="img-fluid w-100 h-100"
-                      style={{ 
-                        objectFit: 'contain',
-                        padding: '1rem',
-                        cursor: 'pointer'
+            {/* Gallery Container */}
+            <div className="gallery-container mb-4 position-relative">
+              {/* Main Image cu săgeți */}
+              <div className="main-image-wrapper mb-2 text-center position-relative" style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                {rental.images.length > 1 && (
+                  <button type="button" className="btn btn-dark position-absolute start-0 top-50 translate-middle-y z-2" style={{left: 10, zIndex: 2}} onClick={prevImage}>
+                    <FaChevronLeft />
+                  </button>
+                )}
+                <Image
+                  src={rental.images[activeImage]}
+                  alt={`${rental.marca} ${rental.model} - Imagine ${activeImage + 1}`}
+                  width={800}
+                  height={600}
+                  className="img-fluid"
+                  style={{
+                    objectFit: 'cover',
+                    width: '100%',
+                    height: '400px',
+                    borderRadius: '16px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.18)'
+                  }}
+                  onClick={() => setShowLightbox(true)}
+                  sizes="(max-width: 768px) 100vw, 800px"
+                />
+                {rental.images.length > 1 && (
+                  <button type="button" className="btn btn-dark position-absolute end-0 top-50 translate-middle-y z-2" style={{right: 10, zIndex: 2}} onClick={nextImage}>
+                    <FaChevronRight />
+                  </button>
+                )}
+              </div>
+              {/* Thumbnails Row - toate vizibile, fără scroll */}
+              <div className="d-flex flex-row flex-wrap justify-content-center align-items-center gap-2 pb-2" style={{marginTop: 8}}>
+                {rental.images.map((image, index) => (
+                  <div key={index} className="thumb-wrapper" style={{ minWidth: 80, maxWidth: 100 }}>
+                    <div
+                      className="position-relative"
+                      style={{
+                        cursor: 'pointer',
+                        border: index === activeImage ? '2px solid #dc3545' : '2px solid transparent',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        boxShadow: index === activeImage ? '0 0 0 2px #fff' : 'none'
                       }}
-                      onClick={() => setShowLightbox(true)}
-                    />
-                    
-                    {/* Navigation arrows */}
-                    {rental.images.length > 1 && (
-                      <>
-                        <button
-                          onClick={() => setActiveImage(prev => (prev === 0 ? rental.images.length - 1 : prev - 1))}
-                          className="btn btn-dark position-absolute top-50 start-0 translate-middle-y ms-2 ms-md-3 rounded-circle d-none d-sm-flex"
-                          style={{ width: '40px', height: '40px', padding: 0, zIndex: 10 }}
-                        >
-                          <i className="bi bi-chevron-left"></i>
-                        </button>
-                        <button
-                          onClick={() => setActiveImage(prev => (prev === rental.images.length - 1 ? 0 : prev + 1))}
-                          className="btn btn-dark position-absolute top-50 end-0 translate-middle-y me-2 me-md-3 rounded-circle d-none d-sm-flex"
-                          style={{ width: '40px', height: '40px', padding: 0, zIndex: 10 }}
-                        >
-                          <i className="bi bi-chevron-right"></i>
-                        </button>
-                      </>
-                    )}
-
-                    {/* Zoom indicator */}
-                    <div className="position-absolute top-0 end-0 m-3">
-                      <button 
-                        className="btn btn-dark rounded-circle"
-                        style={{ width: '40px', height: '40px', padding: 0 }}
-                        onClick={() => setShowLightbox(true)}
-                        title="Mărește imaginea"
-                      >
-                        <i className="bi bi-zoom-in"></i>
-                      </button>
-                    </div>
-
-                    {/* Image counter */}
-                    <div className="position-absolute bottom-0 start-0 end-0 p-2 p-md-3" style={{ 
-                      background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)'
-                    }}>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <h1 className="h4 h3-md mb-0 text-white">
-                          {rental.marca} {rental.model}
-                          <span className="ms-2 opacity-75">{rental.an}</span>
-                        </h1>
-                        <span className="badge bg-dark text-white">
-                          {activeImage + 1} / {rental.images.length}
-                        </span>
-                      </div>
+                      onClick={() => setActiveImage(index)}
+                    >
+                      <Image
+                        src={image}
+                        alt={`${rental.marca} ${rental.model} - Thumbnail ${index + 1}`}
+                        width={100}
+                        height={75}
+                        className="img-fluid w-100 h-100"
+                        style={{ objectFit: 'cover', aspectRatio: '4/3' }}
+                        loading="lazy"
+                        sizes="(max-width: 768px) 25vw, 12vw"
+                      />
                     </div>
                   </div>
-
-                  {/* Thumbnails strip */}
-                  {rental.images.length > 1 && (
-                    <div className="border-top" style={{ borderColor: 'var(--gray-700)' }}>
-                      <div className="d-flex gap-1 gap-md-2 p-1 p-md-2 overflow-auto" style={{ 
-                        scrollbarWidth: 'thin',
-                        scrollbarColor: 'var(--gray-700) var(--gray-800)'
-                      }}>
-                        {rental.images.map((image, index) => (
-                          <div 
-                            key={index}
-                            className="thumbnail-container position-relative"
-                            style={{ 
-                              cursor: 'pointer',
-                              border: activeImage === index ? '2px solid var(--danger-color)' : '2px solid transparent',
-                              borderRadius: '0.375rem',
-                              overflow: 'hidden',
-                              flex: '0 0 auto',
-                              width: '80px',
-                              height: '60px'
-                            }}
-                            onClick={() => setActiveImage(index)}
-                          >
-                            <img
-                              src={image}
-                              alt={`${rental.marca} ${rental.model} - Imagine ${index + 1}`}
-                              className="img-fluid h-100 w-100"
-                              style={{ objectFit: 'cover' }}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                ))}
               </div>
             </div>
-            {/* Car details card - moved here, full width */}
+            {/* Car details card - vertical list, dark, clasic */}
             <div className="card border-0 shadow-sm mb-3 mb-md-4" style={{ backgroundColor: 'var(--gray-900)', border: '1px solid var(--gray-800)' }}>
-              <div className="card-body">
-                <h3 className="h5 text-light mb-3">Detalii mașină</h3>
-                <div className="row g-3">
-                  <div className="col-6">
-                    <div className="d-flex align-items-center">
-                      <FaCar className="text-danger me-2" />
-                      <div>
-                        <small className="text-light opacity-75 d-block">Marcă</small>
-                        <span className="text-light">{rental.marca}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="col-6">
-                    <div className="d-flex align-items-center">
-                      <FaCar className="text-danger me-2" />
-                      <div>
-                        <small className="text-light opacity-75 d-block">Model</small>
-                        <span className="text-light">{rental.model}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="col-6">
-                    <div className="d-flex align-items-center">
-                      <FaTachometerAlt className="text-danger me-2" />
-                      <div>
-                        <small className="text-light opacity-75 d-block">An</small>
-                        <span className="text-light">{rental.an}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Kilometraj - hide if not present */}
-                  {rental.km ? (
-                    <div className="col-6">
-                      <div className="d-flex align-items-center">
-                        <FaRoad className="text-danger me-2" />
-                        <div>
-                          <small className="text-light opacity-75 d-block">Kilometraj</small>
-                          <span className="text-light">{new Intl.NumberFormat('ro-RO').format(rental.km)} km</span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div className="col-6">
-                    <div className="d-flex align-items-center">
-                      <FaGasPump className="text-danger me-2" />
-                      <div>
-                        <small className="text-light opacity-75 d-block">Combustibil</small>
-                        <span className="text-light">{rental.combustibil}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="col-6">
-                    <div className="d-flex align-items-center">
-                      <FaCog className="text-danger me-2" />
-                      <div>
-                        <small className="text-light opacity-75 d-block">Transmisie</small>
-                        <span className="text-light">{rental.transmisie}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {rental.caroserie && (
-                    <div className="col-6">
-                      <div className="d-flex align-items-center">
-                        <FaCar className="text-danger me-2" />
-                        <div>
-                          <small className="text-light opacity-75 d-block">Caroserie</small>
-                          <span className="text-light">{rental.caroserie}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {rental.capacitate && (
-                    <div className="col-6">
-                      <div className="d-flex align-items-center">
-                        <FaCog className="text-danger me-2" />
-                        <div>
-                          <small className="text-light opacity-75 d-block">Capacitate</small>
-                          <span className="text-light">{rental.capacitate} cm³</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
+              <div className="card-body p-3 p-md-4">
+                <h3 className="h5 mb-3 mb-md-4 text-light">
+                  <i className="bi bi-wrench-adjustable text-light me-2"></i>Detalii tehnice
+                </h3>
+                <ul className="list-unstyled mb-0">
+                  <li className="d-flex align-items-center py-2 border-bottom border-gray-700">
+                    <FaCar className="text-danger me-3" style={{ fontSize: '1.2rem', minWidth: '28px' }} />
+                    <span className="text-light fw-bold" style={{ fontSize: '1.05rem' }}>{rental.marca} {rental.model}</span>
+                  </li>
+                  <li className="d-flex align-items-center py-2 border-bottom border-gray-700">
+                    <FaCalendar className="text-danger me-3" style={{ fontSize: '1.2rem', minWidth: '28px' }} />
+                    <span className="text-light" style={{ fontSize: '1.05rem' }}>{rental.an}</span>
+                  </li>
+                  <li className="d-flex align-items-center py-2 border-bottom border-gray-700">
+                    <FaTachometerAlt className="text-danger me-3" style={{ fontSize: '1.2rem', minWidth: '28px' }} />
+                    <span className="text-light" style={{ fontSize: '1.05rem' }}>{new Intl.NumberFormat('ro-RO').format(rental.km)} km</span>
+                  </li>
+                  <li className="d-flex align-items-center py-2 border-bottom border-gray-700">
+                    <FaCar className="text-danger me-3" style={{ fontSize: '1.2rem', minWidth: '28px' }} />
+                    <span className="text-light" style={{ fontSize: '1.05rem' }}>{rental.caroserie}</span>
+                  </li>
+                  <li className="d-flex align-items-center py-2 border-bottom border-gray-700">
+                    <FaGasPump className="text-danger me-3" style={{ fontSize: '1.2rem', minWidth: '28px' }} />
+                    <span className="text-light" style={{ fontSize: '1.05rem' }}>{rental.combustibil}</span>
+                  </li>
+                  <li className="d-flex align-items-center py-2 border-bottom border-gray-700">
+                    <FaCog className="text-danger me-3" style={{ fontSize: '1.2rem', minWidth: '28px' }} />
+                    <span className="text-light" style={{ fontSize: '1.05rem' }}>{rental.transmisie}</span>
+                  </li>
+                  <li className="d-flex align-items-center py-2 border-bottom border-gray-700">
+                    <FaTachometerAlt className="text-danger me-3" style={{ fontSize: '1.2rem', minWidth: '28px' }} />
+                    <span className="text-light" style={{ fontSize: '1.05rem' }}>{rental.capacitate} cm³</span>
+                  </li>
                   {rental.putere && (
-                    <div className="col-6">
-                      <div className="d-flex align-items-center">
-                        <FaTachometerAlt className="text-danger me-2" />
-                        <div>
-                          <small className="text-light opacity-75 d-block">Putere</small>
-                          <span className="text-light">{rental.putere} CP</span>
-                        </div>
-                      </div>
-                    </div>
+                    <li className="d-flex align-items-center py-2 border-bottom border-gray-700">
+                      <FaBolt className="text-danger me-3" style={{ fontSize: '1.2rem', minWidth: '28px' }} />
+                      <span className="text-light" style={{ fontSize: '1.05rem' }}>{rental.putere} CP</span>
+                    </li>
                   )}
-                </div>
+                  {rental.tractiune && (
+                    <li className="d-flex align-items-center py-2">
+                      <FaCog className="text-danger me-3" style={{ fontSize: '1.2rem', minWidth: '28px' }} />
+                      <span className="text-light" style={{ fontSize: '1.05rem' }}>{rental.tractiune}</span>
+                    </li>
+                  )}
+                </ul>
               </div>
             </div>
           </div>
@@ -440,14 +470,16 @@ export default function RentalClient({ rental }: { rental: RentalDetails }) {
                 )}
                 {/* Phone Contact - always show if config.phone exists */}
                 {config?.whatsapp && (
-                  <a 
-                    href={`tel:${config.whatsapp}`}
-                    className="btn btn-danger w-100 d-flex align-items-center justify-content-center mb-2"
-                    style={{ fontSize: '1.1rem' }}
-                  >
-                    <FaPhone className="me-2" />
-                    Sună: {config.whatsapp}
-                  </a>
+                  <div className="d-grid gap-2 mb-3 mb-md-4">
+                    <a
+                      href={`tel:${config.whatsapp}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-outline-danger btn-lg d-flex align-items-center justify-content-center gap-2"
+                    >
+                      <i className="bi bi-telephone"></i> Sună-ne acum: {formatPhone(config.whatsapp)}
+                    </a>
+                  </div>
                 )}
               </div>
             </div>
@@ -492,41 +524,55 @@ export default function RentalClient({ rental }: { rental: RentalDetails }) {
             </div>
           </div>
         )}
+
+        {/* Contact Information */}
+        {rental.contact && (
+          <div className="row mt-4">
+            <div className="col-lg-8">
+              <div className="card border-0 shadow-sm" style={{ backgroundColor: 'var(--gray-900)', border: '1px solid var(--gray-800)' }}>
+                <div className="card-body">
+                  <h3 className="h5 text-light mb-3">Contact</h3>
+                  <p className="mb-0">
+                    <i className="bi bi-person me-2 text-danger"></i>
+                    Contact: {formatPhone(rental.contact)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Lightbox */}
       {showLightbox && (
         <div 
-          className="lightbox-overlay"
+          className="lightbox"
           onClick={() => setShowLightbox(false)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.9)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
         >
           <div className="position-relative" style={{ maxWidth: '90vw', maxHeight: '90vh' }}>
-            <img
+            <Image
               src={rental.images[activeImage]}
               alt={`${rental.marca} ${rental.model}`}
-              style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain'
+              width={1200}
+              height={900}
+              className="img-fluid lightbox-img"
+              style={{ 
+                maxHeight: '95vh', 
+                maxWidth: '95vw',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
               }}
+              sizes="95vw"
             />
             
             {/* Close button */}
             <button
-              onClick={() => setShowLightbox(false)}
-              className="btn btn-dark position-absolute top-0 end-0 m-3 rounded-circle"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowLightbox(false);
+              }}
+              className="btn btn-dark position-absolute top-0 end-0 m-3 rounded-circle lightbox-close"
               style={{ width: '40px', height: '40px', padding: 0 }}
             >
               <i className="bi bi-x-lg"></i>
@@ -540,7 +586,7 @@ export default function RentalClient({ rental }: { rental: RentalDetails }) {
                     e.stopPropagation();
                     prevImage();
                   }}
-                  className="btn btn-dark position-absolute top-50 start-0 translate-middle-y ms-3 rounded-circle"
+                  className="btn btn-dark position-absolute top-50 start-0 translate-middle-y ms-3 rounded-circle lightbox-arrow"
                   style={{ width: '50px', height: '50px', padding: 0 }}
                 >
                   <i className="bi bi-chevron-left"></i>
@@ -550,7 +596,7 @@ export default function RentalClient({ rental }: { rental: RentalDetails }) {
                     e.stopPropagation();
                     nextImage();
                   }}
-                  className="btn btn-dark position-absolute top-50 end-0 translate-middle-y me-3 rounded-circle"
+                  className="btn btn-dark position-absolute top-50 end-0 translate-middle-y me-3 rounded-circle lightbox-arrow"
                   style={{ width: '50px', height: '50px', padding: 0 }}
                 >
                   <i className="bi bi-chevron-right"></i>

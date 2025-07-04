@@ -1,122 +1,102 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { memo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/utils/firebase';
-import React, { useState, useRef, useEffect } from 'react';
 
-const AdminNavbar = () => {
-  const pathname = usePathname();
+const AdminNavbar = memo(function AdminNavbar() {
   const router = useRouter();
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const menuItems = [
-    { label: 'Dashboard', path: '/admin/dashboard' },
-    { label: 'Vânzări', path: '/admin/list', submenu: [
-      { label: 'Adaugă anunț', path: '/admin/add' },
-      { label: 'Administrare anunțuri', path: '/admin/list' },
-    ]},
-    { label: 'Închirieri', path: '/admin/rentals/list', submenu: [
-      { label: 'Adaugă închiriere', path: '/admin/rentals/add' },
-      { label: 'Administrare închirieri', path: '/admin/rentals/list' },
-    ]},
-    { label: 'Setări parc auto', path: '/admin/settings' },
-  ];
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      router.push('/');
+      router.push('/login');
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error('Error signing out:', error);
     }
   };
-
-  const isActive = (path: string) => {
-    return pathname === path || pathname.startsWith(path + '/');
-  };
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpenDropdown(null);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   return (
-    <nav className="admin-navbar py-3" style={{ backgroundColor: 'var(--gray-900)' }}>
-      <div className="container">
-        <div className="d-flex justify-content-between align-items-center">
-          <Link 
-            href="/admin/dashboard" 
-            className="text-white text-decoration-none"
-          >
-            <h1 className="h4 mb-0 fw-bold">Admin Panel</h1>
-          </Link>
-          <div className="d-flex align-items-center" style={{ gap: '2rem' }}>
-            {menuItems.map((item) => (
-              <div key={item.path} className="position-relative" ref={item.submenu ? dropdownRef : undefined}>
-                {item.submenu ? (
-                  <>
-                    <button
-                      type="button"
-                      className={`bg-transparent border-0 text-white text-decoration-none ${isActive(item.path) ? 'fw-bold border-bottom border-2' : 'opacity-75 hover-opacity-100'}`}
-                      style={{ fontSize: '1.125rem', transition: 'all 0.2s ease', paddingBottom: '0.25rem', outline: 'none' }}
-                      onClick={() => setOpenDropdown(openDropdown === item.path ? null : item.path)}
-                    >
-                      {item.label} <i className={`bi ms-1 ${openDropdown === item.path ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
-                    </button>
-                    {openDropdown === item.path && (
-                      <div className="position-absolute top-100 start-0 mt-2" style={{ zIndex: 1000, minWidth: 220 }}>
-                        <div className="bg-white border border-secondary rounded shadow py-2">
-                          {item.submenu.map((subItem) => (
-                            <Link
-                              key={subItem.path}
-                              href={subItem.path}
-                              className={`d-block px-4 py-2 text-dark text-decoration-none ${pathname === subItem.path ? 'bg-light fw-bold' : 'hover-bg-light'}`}
-                              style={{ fontSize: '1rem', borderRadius: 4 }}
-                              onClick={() => setOpenDropdown(null)}
-                            >
-                              {subItem.label}
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <Link
-                    href={item.path}
-                    className={`text-white text-decoration-none ${isActive(item.path) ? 'fw-bold border-bottom border-2' : 'opacity-75 hover-opacity-100'}`}
-                    style={{ fontSize: '1.125rem', transition: 'all 0.2s ease', paddingBottom: '0.25rem' }}
-                  >
-                    {item.label}
-                  </Link>
-                )}
-              </div>
-            ))}
-            <button
-              onClick={handleLogout}
-              className="btn btn-outline-light ms-4"
-              style={{ 
-                fontSize: '1rem',
-                padding: '0.5rem 1.25rem'
-              }}
-            >
-              <i className="bi bi-box-arrow-right me-2"></i>
-              Logout
-            </button>
-          </div>
+    <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div className="container-fluid">
+        <Link href="/admin/dashboard" className="navbar-brand">
+          <i className="bi bi-speedometer2 me-2"></i>
+          Admin Panel
+        </Link>
+        
+        <button 
+          className="navbar-toggler" 
+          type="button" 
+          data-bs-toggle="collapse" 
+          data-bs-target="#navbarNav"
+        >
+          <span className="navbar-toggler-icon"></span>
+        </button>
+        
+        <div className="collapse navbar-collapse" id="navbarNav">
+          <ul className="navbar-nav me-auto">
+            <li className="nav-item">
+              <Link href="/admin/dashboard" className="nav-link">
+                <i className="bi bi-house me-1"></i>Dashboard
+              </Link>
+            </li>
+            <li className="nav-item dropdown">
+              <a 
+                className="nav-link dropdown-toggle" 
+                href="#" 
+                role="button" 
+                data-bs-toggle="dropdown"
+              >
+                <i className="bi bi-car-front me-1"></i>Mașini
+              </a>
+              <ul className="dropdown-menu">
+                <li><Link href="/admin/add" className="dropdown-item">Adaugă mașină</Link></li>
+                <li><Link href="/admin/list" className="dropdown-item">Lista mașini</Link></li>
+              </ul>
+            </li>
+            <li className="nav-item dropdown">
+              <a 
+                className="nav-link dropdown-toggle" 
+                href="#" 
+                role="button" 
+                data-bs-toggle="dropdown"
+              >
+                <i className="bi bi-calendar-check me-1"></i>Închirieri
+              </a>
+              <ul className="dropdown-menu">
+                <li><Link href="/admin/rentals/add" className="dropdown-item">Adaugă închiriere</Link></li>
+                <li><Link href="/admin/rentals/list" className="dropdown-item">Lista închirieri</Link></li>
+              </ul>
+            </li>
+            <li className="nav-item">
+              <Link href="/admin/settings" className="nav-link">
+                <i className="bi bi-gear me-1"></i>Setări
+              </Link>
+            </li>
+          </ul>
+          
+          <ul className="navbar-nav">
+            <li className="nav-item">
+              <Link href="/" className="nav-link">
+                <i className="bi bi-house me-1"></i>Vizualizează site-ul
+              </Link>
+            </li>
+            <li className="nav-item">
+              <button 
+                onClick={handleLogout}
+                className="nav-link btn btn-link text-light"
+                style={{ textDecoration: 'none' }}
+              >
+                <i className="bi bi-box-arrow-right me-1"></i>Logout
+              </button>
+            </li>
+          </ul>
         </div>
       </div>
     </nav>
   );
-};
+});
 
 export default AdminNavbar; 

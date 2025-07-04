@@ -3,6 +3,21 @@
 import Link from 'next/link';
 import { useConfig } from '@/hooks/useConfig';
 
+function formatPhone(phone: string) {
+  if (!phone) return '';
+  // Extrage doar cifrele
+  const digits = phone.replace(/\D/g, '');
+  // Dacă deja începe cu 40, nu adăuga încă un +40
+  let formatted = digits.startsWith('40') ? digits : '40' + digits.replace(/^0/, '');
+  // Format: +40 0XXX XXX XXX sau +40 7XX XXX XXX
+  if (formatted.length === 11) {
+    return `+${formatted.slice(0,2)} 0${formatted.slice(2,5)} ${formatted.slice(5,8)} ${formatted.slice(8)}`;
+  } else if (formatted.length === 12) {
+    return `+${formatted.slice(0,2)} ${formatted.slice(2,5)} ${formatted.slice(5,8)} ${formatted.slice(8)}`;
+  }
+  return phone;
+}
+
 const Footer = () => {
   const { config } = useConfig();
 
@@ -35,7 +50,7 @@ const Footer = () => {
                     href={`tel:${config.whatsapp}`} 
                     className="text-decoration-none text-light opacity-75 hover-opacity-100"
                   >
-                    {config.whatsapp}
+                    {formatPhone(config.whatsapp)}
                   </a>
                 </p>
               )}

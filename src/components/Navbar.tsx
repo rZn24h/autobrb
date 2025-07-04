@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useConfig } from '@/hooks/useConfig';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -183,21 +184,19 @@ const Navbar: React.FC = () => {
               <span className="visually-hidden">Se încarcă...</span>
             </div>
           ) : config?.logoUrl ? (
-            <img
+            <Image
               src={config.logoUrl}
-              alt={config.nume || 'Logo'}
-              style={{
-                width: 'auto',
-                height: '40px',
-                objectFit: 'contain',
-                transition: 'transform 0.3s ease'
-              }}
-              className="d-inline-block align-top"
+              alt={config?.nume || 'Logo'}
+              width={120}
+              height={40}
+              className="navbar-brand-logo"
+              style={{ height: '40px', objectFit: 'contain' }}
+              priority
             />
           ) : (
-            <div className="text-danger" style={{ fontSize: '1.5rem' }}>
-              <i className="bi bi-car-front"></i>
-            </div>
+            <span className="navbar-brand-text">
+              {config?.nume || 'AutoBRB'}
+            </span>
           )}
         </Link>
 

@@ -3,6 +3,21 @@
 import { useState } from 'react';
 import { useConfig } from '@/hooks/useConfig';
 
+function formatPhone(phone: string) {
+  if (!phone) return '';
+  // Extrage doar cifrele
+  const digits = phone.replace(/\D/g, '');
+  // Dacă deja începe cu 40, nu adăuga încă un +40
+  let formatted = digits.startsWith('40') ? digits : '40' + digits.replace(/^0/, '');
+  // Format: +40 0XXX XXX XXX sau +40 7XX XXX XXX
+  if (formatted.length === 11) {
+    return `+${formatted.slice(0,2)} 0${formatted.slice(2,5)} ${formatted.slice(5,8)} ${formatted.slice(8)}`;
+  } else if (formatted.length === 12) {
+    return `+${formatted.slice(0,2)} ${formatted.slice(2,5)} ${formatted.slice(5,8)} ${formatted.slice(8)}`;
+  }
+  return phone;
+}
+
 export default function ContactPage() {
   const { config } = useConfig();
   const [formData, setFormData] = useState({
@@ -98,7 +113,8 @@ export default function ContactPage() {
                         <h3 className="h6 mb-1">Telefon</h3>
                         <p className="mb-0 text-muted">
                           <a href={`tel:${config?.whatsapp || '0722000000'}`} className="text-decoration-none">
-                            {config?.whatsapp || '0722 000 000'}
+                            <i className="bi bi-telephone me-2 text-danger"></i>
+                            {formatPhone(config?.whatsapp || '0722000000')}
                           </a>
                         </p>
                       </div>

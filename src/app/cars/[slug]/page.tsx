@@ -4,8 +4,8 @@ import { notFound } from 'next/navigation';
 import CarClient from './CarClient';
 import '../CarGallery.css';
 
-export async function generateMetadata(props: { params: { slug: string } }) {
-  const { slug } = props.params;
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const { slug } = await props.params;
   const docRef = doc(db, 'cars', slug);
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) {
@@ -15,8 +15,8 @@ export async function generateMetadata(props: { params: { slug: string } }) {
   return { title: `${car.marca} ${car.model} - ${car.an}` };
 }
 
-export default async function Page(props: { params: { slug: string } }) {
-  const { slug } = props.params;
+export default async function Page(props: { params: Promise<{ slug: string }> }) {
+  const { slug } = await props.params;
   const docRef = doc(db, 'cars', slug);
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) {

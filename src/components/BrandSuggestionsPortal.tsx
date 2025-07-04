@@ -1,50 +1,74 @@
-import { useEffect, useRef } from 'react';
+'use client';
+
+import { memo, useLayoutEffect, useState, RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { createPopper, Instance } from '@popperjs/core';
 
 interface BrandSuggestionsPortalProps {
   children: React.ReactNode;
-  anchorRef: React.RefObject<HTMLElement>;
   visible: boolean;
+  anchorRef: RefObject<HTMLElement>;
 }
 
-export default function BrandSuggestionsPortal({ children, anchorRef, visible }: BrandSuggestionsPortalProps) {
-  const portalRef = useRef<HTMLDivElement>(null);
-  const popperInstance = useRef<Instance | null>(null);
+const BrandSuggestionsPortal = memo(function BrandSuggestionsPortal({ 
+  children, 
+  visible, 
+  anchorRef 
+}: BrandSuggestionsPortalProps) {
+  const [mounted, setMounted] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
 
-  useEffect(() => {
-    if (!anchorRef?.current || !portalRef.current || !visible) return;
-    if (popperInstance.current) {
-      popperInstance.current.destroy();
-      popperInstance.current = null;
-    }
-    popperInstance.current = createPopper(anchorRef.current, portalRef.current, {
-      placement: 'bottom-start',
-      modifiers: [
-        { name: 'offset', options: { offset: [0, 4] } },
-        { name: 'preventOverflow', options: { boundary: 'viewport', padding: 8 } },
-        { name: 'flip', options: { fallbackPlacements: ['top-start'] } },
-        { name: 'customZIndex', enabled: true, phase: 'write', fn: ({ state }) => {
-          if (state.elements && state.elements.popper) {
-            (state.elements.popper as HTMLElement).style.zIndex = '2147483647';
-          }
-        }}
-      ],
-    });
-    return () => {
-      if (popperInstance.current) {
-        popperInstance.current.destroy();
-        popperInstance.current = null;
+  useLayoutEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!visible || !anchorRef.current || !mounted) return;
+
+    const updatePosition = () => {
+      const rect = anchorRef.current?.getBoundingClientRect();
+      if (rect) {
+        setPosition({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        });
       }
     };
-  }, [anchorRef, visible]);
 
-  if (!visible) return null;
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition);
+    };
+  }, [visible, anchorRef, mounted]);
+
+  if (!mounted || !visible) {
+    return null;
+  }
 
   return createPortal(
-    <div ref={portalRef} style={{ pointerEvents: visible ? 'auto' : 'none', width: anchorRef.current?.offsetWidth || '100%', zIndex: 2147483647 }}>
+    <div
+      style={{
+        position: 'absolute',
+        top: position.top,
+        left: position.left,
+        width: position.width,
+        zIndex: 9999,
+        backgroundColor: 'white',
+        border: '1px solid #ddd',
+        borderRadius: '0.375rem',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        maxHeight: '200px',
+        overflowY: 'auto'
+      }}
+    >
       {children}
     </div>,
     document.body
   );
-} 
+});
+
+export default BrandSuggestionsPortal; 

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit, startAfter, DocumentSnapshot } from 'firebase/firestore';
 import { db } from '@/utils/firebase';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useConfig } from '@/hooks/useConfig';
 import dynamic from 'next/dynamic';
 import { getBrands } from '@/utils/apiBrands';
@@ -32,14 +33,15 @@ function slugify(str: string) {
     .replace(/(^-|-$)+/g, '');
 }
 
-// Cache pentru datele mașinilor
-let carsCache: any[] = [];
-let lastFetchTime = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minute
+// Pagination constants
+const INITIAL_LIMIT = 6;
+const LOAD_MORE_LIMIT = 6;
+const PRIORITY_IMAGES_COUNT = 5; // Primele 5 anunțuri cu încărcare prioritară
 
 export default function HomePage() {
   const [cars, setCars] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
+  const [displayedCars, setDisplayedCars] = useState<any[]>([]);
   const [marca, setMarca] = useState('');
   const [searchMarca, setSearchMarca] = useState('');
   const [filteredMarci, setFilteredMarci] = useState<string[]>([]);
@@ -48,10 +50,15 @@ export default function HomePage() {
   const [pretMax, setPretMax] = useState('');
   const [sortBy, setSortBy] = useState<SortOption | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [brands, setBrands] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(true);
   const { config, loading: loadingConfig } = useConfig();
   const inputRef = useRef<HTMLInputElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch brands from Firestore
   useEffect(() => {
@@ -63,7 +70,6 @@ export default function HomePage() {
         setBrands(brandNames);
       } catch (error) {
         console.error('Error fetching brands:', error);
-        // Fallback to extracting from cars if brands fetch fails
         const fallbackBrands = Array.from(new Set(cars.map(car => car.marca).filter(Boolean))).sort();
         setBrands(fallbackBrands);
       } finally {
@@ -86,65 +92,49 @@ export default function HomePage() {
 
   // Update filtered brands when search changes
   useEffect(() => {
-    console.log('Updating filtered brands:', { searchMarca, brandsLength: brands.length }); // Debug
+    console.log('Updating filtered brands:', { searchMarca, brandsLength: brands.length });
     setFilteredMarci(filteredBrands);
-    // Only hide suggestions if user explicitly clears the input
     if (!searchMarca.trim() && showSuggestions) {
-      // Keep suggestions visible but show all brands
       setFilteredMarci(brands);
     }
-    console.log('Show suggestions set to:', !!searchMarca.trim()); // Debug
+    console.log('Show suggestions set to:', !!searchMarca.trim());
   }, [filteredBrands, searchMarca, showSuggestions, brands]);
-
-  // Debug effect for suggestions state
-  useEffect(() => {
-    console.log('Suggestions state changed:', { 
-      showSuggestions, 
-      filteredMarciLength: filteredMarci.length,
-      hasSuggestions: showSuggestions && filteredMarci.length > 0
-    }); // Debug
-  }, [showSuggestions, filteredMarci]);
 
   // Handle brand selection - memoized
   const handleBrandSelect = useCallback((selectedMarca: string, event?: React.MouseEvent) => {
-    console.log('=== BRAND SELECTION START ==='); // Debug
-    console.log('Selected marca:', selectedMarca); // Debug
+    console.log('=== BRAND SELECTION START ===');
+    console.log('Selected marca:', selectedMarca);
     
-    // Prevent any default behavior and stop propagation
     if (event) {
       event.preventDefault();
       event.stopPropagation();
-      console.log('Event prevented and stopped'); // Debug
+      console.log('Event prevented and stopped');
     }
     
-    // Force immediate update of both states
-    console.log('Setting marca to:', selectedMarca); // Debug
+    console.log('Setting marca to:', selectedMarca);
     setMarca(selectedMarca);
     
-    console.log('Setting searchMarca to:', selectedMarca); // Debug
+    console.log('Setting searchMarca to:', selectedMarca);
     setSearchMarca(selectedMarca);
     
-    console.log('Hiding suggestions'); // Debug
+    console.log('Hiding suggestions');
     setShowSuggestions(false);
     
-    // Force input update by directly setting the value
     if (inputRef.current) {
-      console.log('Directly setting input value to:', selectedMarca); // Debug
+      console.log('Directly setting input value to:', selectedMarca);
       inputRef.current.value = selectedMarca;
     }
     
-    // Focus input for better UX
     setTimeout(() => {
       if (inputRef.current) {
-        console.log('Focusing input and ensuring value'); // Debug
+        console.log('Focusing input and ensuring value');
         inputRef.current.focus();
-        // Ensure the value is set correctly
         inputRef.current.value = selectedMarca;
-        console.log('Input value after focus:', inputRef.current.value); // Debug
+        console.log('Input value after focus:', inputRef.current.value);
       }
     }, 10);
     
-    console.log('=== BRAND SELECTION END ==='); // Debug
+    console.log('=== BRAND SELECTION END ===');
   }, []);
 
   // Handle input change - memoized
@@ -156,7 +146,6 @@ export default function HomePage() {
       setMarca('');
       setFilteredMarci(brands);
     } else {
-      // Update marca when typing for real-time filtering
       setMarca(value);
     }
   }, [brands]);
@@ -165,22 +154,20 @@ export default function HomePage() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      console.log('Click outside detected on:', target.className); // Debug
+      console.log('Click outside detected on:', target.className);
       
-      // Don't close if clicking on dropdown items
       if (target.closest('.brand-suggestions') || target.closest('.suggestion-item')) {
-        console.log('Click on dropdown - not closing'); // Debug
+        console.log('Click on dropdown - not closing');
         return;
       }
       
-      // Don't close if clicking on the input itself
       if (target.closest('input[type="text"]')) {
-        console.log('Click on input - not closing'); // Debug
+        console.log('Click on input - not closing');
         return;
       }
       
       if (!target.closest('.search-bar-item')) {
-        console.log('Click outside search bar - closing dropdown'); // Debug
+        console.log('Click outside search bar - closing dropdown');
         setShowSuggestions(false);
       }
     };
@@ -189,44 +176,80 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch cars with caching
+  // Fetch initial cars
   useEffect(() => {
     const fetchCars = async () => {
-      const now = Date.now();
-      
-      // Use cache if it's still valid
-      if (carsCache.length > 0 && (now - lastFetchTime) < CACHE_DURATION) {
-        setCars(carsCache);
-        setFiltered(carsCache);
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       try {
-        const q = query(collection(db, 'cars'), orderBy('createdAt', 'desc'), limit(50));
+        const q = query(collection(db, 'cars'), orderBy('createdAt', 'desc'), limit(INITIAL_LIMIT));
         const snap = await getDocs(q);
         const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // Update cache
-        carsCache = data;
-        lastFetchTime = now;
-        
         setCars(data);
         setFiltered(data);
+        setHasMore(snap.docs.length === INITIAL_LIMIT);
       } catch (error) {
         console.error('Error fetching cars:', error);
-        // Fallback to cache if available
-        if (carsCache.length > 0) {
-          setCars(carsCache);
-          setFiltered(carsCache);
-        }
       } finally {
         setLoading(false);
       }
     };
     fetchCars();
   }, []);
+
+  // Load more cars function
+  const loadMoreCars = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    
+    setLoadingMore(true);
+    try {
+      const lastDoc = cars[cars.length - 1];
+      if (!lastDoc) return;
+      
+      const q = query(
+        collection(db, 'cars'),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastDoc.createdAt),
+        limit(LOAD_MORE_LIMIT)
+      );
+      
+      const snap = await getDocs(q);
+      const newCars = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      if (newCars.length > 0) {
+        setCars(prevCars => [...prevCars, ...newCars]);
+        setHasMore(newCars.length === LOAD_MORE_LIMIT);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error loading more cars:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cars, loadingMore, hasMore]);
+
+  // Setup intersection observer for infinite scroll
+  useEffect(() => {
+    if (!loadMoreRef.current) return;
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMoreCars();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observerRef.current.observe(loadMoreRef.current);
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMore, loadingMore, loadMoreCars]);
 
   // Handle sort - memoized
   const handleSort = useCallback((option: SortOption) => {
@@ -235,8 +258,8 @@ export default function HomePage() {
 
   // Filter and sort cars - memoized
   useEffect(() => {
-    console.log('Filtering cars with marca:', marca); // Debug
-    console.log('Total cars:', cars.length); // Debug
+    console.log('Filtering cars with marca:', marca);
+    console.log('Total cars:', cars.length);
     
     let result = [...cars];
 
@@ -246,10 +269,10 @@ export default function HomePage() {
         const carMarca = car.marca ? car.marca.toLowerCase() : '';
         const searchMarca = marca.toLowerCase();
         const matches = carMarca.includes(searchMarca);
-        console.log(`Car ${car.id}: marca="${car.marca}" matches="${searchMarca}" = ${matches}`); // Debug
+        console.log(`Car ${car.id}: marca="${car.marca}" matches="${searchMarca}" = ${matches}`);
         return matches;
       });
-      console.log('Cars after brand filter:', result.length); // Debug
+      console.log('Cars after brand filter:', result.length);
     }
 
     // Filter by price range
@@ -271,7 +294,7 @@ export default function HomePage() {
       });
     }
 
-    console.log('Final filtered cars:', result.length); // Debug
+    console.log('Final filtered cars:', result.length);
     setFiltered(result);
   }, [cars, marca, pretMin, pretMax, sortBy]);
 
@@ -298,17 +321,17 @@ export default function HomePage() {
       >
         {/* Banner Image */}
         {config?.bannerImg ? (
-          <img 
-            src={config.bannerImg} 
-            alt="Banner" 
-            className="position-absolute w-100 h-100"
+          <Image
+            src={config.bannerImg}
+            alt="Banner"
+            fill
+            priority
+            className="position-absolute"
             style={{
               objectFit: 'cover',
-              top: 0,
-              left: 0,
               zIndex: 0
             }}
-            loading="eager"
+            sizes="100vw"
           />
         ) : (
           <div 
@@ -349,12 +372,12 @@ export default function HomePage() {
               ) : null}
 
               {/* Search Section */}
-              <div className="search-container mt-4">
-                <div className="search-bar">
+              <div className="search-container mt-4 d-flex justify-content-center">
+                <div className="search-bar w-100">
                   {/* Brand Search */}
                   <div className="search-bar-item">
-                    <label className="form-label text-white">Marcă</label>
-                    <div className="position-relative">
+                    <label className="form-label text-dark" style={{ fontSize: '1.18rem', textAlign: 'center', marginBottom: 8 }}>Marcă</label>
+                    <div className="position-relative w-100">
                       <input
                         ref={inputRef}
                         type="text"
@@ -363,21 +386,16 @@ export default function HomePage() {
                         value={searchMarca}
                         onChange={handleBrandInputChange}
                         onFocus={() => {
-                          console.log('Input focused, showing suggestions'); // Debug
                           setShowSuggestions(true);
-                          // Show all brands when input is focused, regardless of current text
                           setFilteredMarci(brands);
                         }}
                         onClick={() => {
-                          console.log('Input clicked, showing suggestions'); // Debug
                           setShowSuggestions(true);
-                          // Show all brands when input is clicked, regardless of current text
                           setFilteredMarci(brands);
                         }}
                         disabled={loadingBrands}
+                        style={{ background: '#fff', color: '#000', width: '100%', fontSize: '1.45rem', padding: '22px 32px', minHeight: 70, height: '100%' }}
                       />
-                      
-                      {/* Simple dropdown instead of portal for testing */}
                       {showSuggestions && filteredMarci.length > 0 && (
                         <div 
                           className="brand-suggestions"
@@ -386,79 +404,63 @@ export default function HomePage() {
                             top: '100%',
                             left: 0,
                             right: 0,
-                            zIndex: 2147483647,
-                            pointerEvents: 'auto'
-                          }}
-                          onMouseEnter={() => {
-                            console.log('Mouse entered dropdown'); // Debug
+                            zIndex: 99999,
+                            pointerEvents: 'auto',
+                            background: '#fff',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: 8,
+                            maxHeight: 152,
+                            overflowY: 'auto',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
                           }}
                         >
-                          <ul>
-                            {filteredMarci.slice(0, 10).map((marca, index) => {
-                              console.log('Rendering suggestion item:', marca); // Debug
-                              return (
-                                <li
-                                  key={index}
-                                  onClick={(e) => {
-                                    console.log('Click detected on:', marca); // Debug
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleBrandSelect(marca, e);
-                                  }}
-                                  onMouseDown={(e) => {
-                                    console.log('MouseDown detected on:', marca); // Debug
-                                    e.preventDefault();
-                                  }}
-                                  onMouseEnter={() => {
-                                    console.log('Mouse entered item:', marca); // Debug
-                                  }}
-                                  className="suggestion-item"
-                                  style={{ 
-                                    cursor: 'pointer', 
-                                    userSelect: 'none',
-                                    pointerEvents: 'auto',
-                                    zIndex: 2147483647
-                                  }}
-                                >
-                                  {marca}
-                                </li>
-                              );
-                            })}
+                          <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+                            {filteredMarci.slice(0, 10).map((marca, index) => (
+                              <li
+                                key={index}
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleBrandSelect(marca, e); }}
+                                onMouseDown={(e) => e.preventDefault()}
+                                className="suggestion-item"
+                                style={{ cursor: 'pointer', userSelect: 'none', pointerEvents: 'auto', zIndex: 99999, color: '#111', background: '#fff', padding: '16px 24px', fontSize: '1.15rem', minHeight: 56, height: 'auto', whiteSpace: 'normal' }}
+                              >
+                                {marca}
+                              </li>
+                            ))}
                           </ul>
                         </div>
                       )}
                     </div>
                   </div>
-
                   {/* Price Range */}
                   <div className="search-bar-item">
-                    <label className="form-label text-white">Preț minim</label>
+                    <label className="form-label text-dark" style={{ fontSize: '1.18rem', textAlign: 'center', marginBottom: 8 }}>Preț minim</label>
                     <input
                       type="number"
                       className="form-control form-control-lg"
                       placeholder="Preț minim"
                       value={pretMin}
                       onChange={(e) => setPretMin(e.target.value)}
+                      style={{ background: '#fff', color: '#000', width: '100%', fontSize: '1.45rem', padding: '22px 32px', minHeight: 70, height: '100%' }}
                     />
                   </div>
-
                   <div className="search-bar-item">
-                    <label className="form-label text-white">Preț maxim</label>
+                    <label className="form-label text-dark" style={{ fontSize: '1.18rem', textAlign: 'center', marginBottom: 8 }}>Preț maxim</label>
                     <input
                       type="number"
                       className="form-control form-control-lg"
                       placeholder="Preț maxim"
                       value={pretMax}
                       onChange={(e) => setPretMax(e.target.value)}
+                      style={{ background: '#fff', color: '#000', width: '100%', fontSize: '1.45rem', padding: '22px 32px', minHeight: 70, height: '100%' }}
                     />
                   </div>
-
                   {/* Reset Button */}
                   <div className="search-bar-item">
-                    <label className="form-label text-white">&nbsp;</label>
+                    <label className="form-label text-dark" style={{ fontSize: '1.18rem', textAlign: 'center', marginBottom: 8 }}>&nbsp;</label>
                     <button
                       className="btn btn-danger btn-lg w-100"
                       onClick={handleReset}
+                      style={{ fontSize: '1.45rem', padding: '22px 32px', minHeight: 70, height: '100%' }}
                     >
                       Resetează filtrele
                     </button>
@@ -472,22 +474,23 @@ export default function HomePage() {
 
       {/* Main Content */}
       <div className="main-container py-5">
-        {/* Listings Container */}
         <div className="listings-container">
           <div className="listings-header mb-4">
-            <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 w-100">
               <h2 className="h3 mb-0 text-light">Anunțuri disponibile</h2>
-              <div className="sort-controls d-flex gap-2 flex-wrap">
+              <div className="sort-controls d-flex flex-row flex-wrap gap-2 justify-content-center align-items-center mt-2 mt-lg-0">
                 <button
-                  className={`btn ${sortBy === 'price-asc' ? 'btn-danger' : 'btn-outline-danger'}`}
+                  className={`btn ${sortBy === 'price-asc' ? 'btn-danger' : 'btn-outline-danger'} fw-semibold`}
                   onClick={() => handleSort('price-asc')}
+                  style={{ fontSize: '1.15rem', minHeight: 48 }}
                 >
                   <i className="bi bi-sort-numeric-down me-1"></i>
                   Preț crescător
                 </button>
                 <button
-                  className={`btn ${sortBy === 'price-desc' ? 'btn-danger' : 'btn-outline-danger'}`}
+                  className={`btn ${sortBy === 'price-desc' ? 'btn-danger' : 'btn-outline-danger'} fw-semibold`}
                   onClick={() => handleSort('price-desc')}
+                  style={{ fontSize: '1.15rem', minHeight: 48 }}
                 >
                   <i className="bi bi-sort-numeric-up-alt me-1"></i>
                   Preț descrescător
@@ -504,11 +507,26 @@ export default function HomePage() {
               </div>
             </div>
           ) : filtered.length > 0 ? (
-            <div className="listings-grid">
-              {filtered.map((car) => (
-                <CarCard key={car.id} car={car} />
-              ))}
-            </div>
+            <>
+              <div className="listings-grid mt-5">
+                {filtered.map((car, index) => (
+                  <CarCard key={car.id} car={car} priority={index < PRIORITY_IMAGES_COUNT} />
+                ))}
+              </div>
+              
+              {/* Load More Trigger */}
+              {hasMore && (
+                <div ref={loadMoreRef} className="text-center py-4">
+                  {loadingMore ? (
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Se încarcă mai multe anunțuri...</span>
+                    </div>
+                  ) : (
+                    <div className="text-muted">Derulează pentru mai multe anunțuri</div>
+                  )}
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-5">
               <p className="text-muted mb-0">Nu am găsit anunțuri care să corespundă criteriilor tale.</p>
@@ -516,6 +534,211 @@ export default function HomePage() {
           )}
         </div>
       </div>
+
+      <style jsx>{`
+        .listings-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 2rem;
+        }
+        @media (min-width: 600px) {
+          .listings-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        @media (min-width: 992px) {
+          .listings-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+        .car-title {
+          font-size: 1.05rem;
+          font-weight: 600;
+          color: #fff;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 90%;
+        }
+        .spec-text {
+          font-size: 1.05rem;
+        }
+        .search-container {
+          max-width: 1100px;
+          margin: 0 auto;
+        }
+        .search-bar {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        @media (min-width: 600px) {
+          .search-bar {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+          }
+        }
+        @media (min-width: 1200px) {
+          .search-bar {
+            grid-template-columns: repeat(4, 1fr);
+            justify-items: center;
+            align-items: stretch;
+            gap: 2.2rem;
+          }
+          .search-bar-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            height: 100%;
+          }
+          .search-bar-item input[type="text"],
+          .search-bar-item input[type="number"] {
+            background: #23262b;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.08rem;
+            font-weight: 500;
+            padding: 8px 32px;
+            height: 38px;
+            min-height: 38px;
+            max-height: 38px;
+            max-width: 520px;
+            width: 100%;
+            margin: 0 auto;
+            box-sizing: border-box;
+          }
+          .search-bar-item button {
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.08rem;
+            font-weight: 600;
+            padding: 8px 36px;
+            height: 38px;
+            min-height: 38px;
+            max-height: 38px;
+            max-width: 520px;
+            width: 100%;
+            margin: 0 auto;
+            box-sizing: border-box;
+            transition: background 0.2s;
+            white-space: normal;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .search-bar-item button:hover {
+            background: #b91c2b;
+          }
+          .search-bar-item label {
+            color: #fff;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1.08rem;
+          }
+        }
+        .search-bar-item input,
+        .search-bar-item button {
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+          font-size: 1.08rem;
+          padding: 8px 32px;
+          min-height: 38px;
+          max-height: 38px;
+          border-radius: 12px;
+          box-sizing: border-box;
+          border: none;
+        }
+        .search-bar-item label {
+          font-weight: 600;
+          font-size: 1.08rem;
+          color: #fff;
+          text-align: center;
+          margin-bottom: 8px;
+        }
+        .brand-suggestions {
+          max-width: 350px !important;
+          width: 100% !important;
+          left: 0;
+          right: 0;
+          margin: 0 auto;
+          max-height: 152px !important;
+          overflow-y: auto !important;
+        }
+        .brand-suggestions ul {
+          width: 100%;
+        }
+        .brand-suggestions li {
+          color: #111;
+          background: #fff;
+          padding: 10px 16px;
+          font-size: 0.98rem;
+          border-bottom: 1px solid #eee;
+          white-space: normal;
+        }
+        .brand-suggestions li:last-child {
+          border-bottom: none;
+        }
+        .brand-suggestions li:hover {
+          background: #f2f2f2;
+        }
+        @media (max-width: 600px) {
+          .brand-suggestions {
+            max-width: 100% !important;
+            width: 100% !important;
+          }
+        }
+        /* Card specs grid responsive: 2 coloane pe mobil, flex pe desktop, centrat și spacing egal */
+        :global(.specs-grid) {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.9rem 2.2rem;
+          justify-items: center;
+          align-items: center;
+          padding: 10px 0 10px 0;
+        }
+        :global(.spec-item) {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 0.3rem;
+        }
+        :global(.spec-icon) {
+          font-size: 1.35rem;
+          margin-bottom: 2px;
+          color: #dc3545 !important;
+        }
+        :global(.price-tag) {
+          color: #dc3545 !important;
+          font-weight: 700;
+          font-size: 1.18rem;
+        }
+        @media (min-width: 600px) {
+          :global(.specs-grid) {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem 2.8rem;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 0 10px 0;
+          }
+          :global(.spec-item) {
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-left: auto;
+            margin-right: auto;
+          }
+        }
+      `}</style>
     </div>
   );
 }
