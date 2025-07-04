@@ -91,6 +91,7 @@ export default function RentalsPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [dropdownWidth, setDropdownWidth] = useState<number | undefined>(undefined);
 
   // Fetch brands from Firestore
   useEffect(() => {
@@ -316,6 +317,12 @@ export default function RentalsPage() {
     setShowSuggestions(false);
   }, []);
 
+  useEffect(() => {
+    if (inputRef.current) {
+      setDropdownWidth(inputRef.current.offsetWidth);
+    }
+  }, [inputRef.current, searchMarca]);
+
   // Loader global doar pentru config (nu și pentru rentals)
   if (loadingConfig) {
     return (
@@ -425,11 +432,14 @@ export default function RentalsPage() {
                         if (!searchMarca.trim()) {
                           setFilteredMarci(brands);
                         }
+                        if (inputRef.current) {
+                          setDropdownWidth(inputRef.current.offsetWidth);
+                        }
                       }}
                       disabled={loadingBrands}
                     />
                     <BrandSuggestionsPortal anchorRef={inputRef} visible={showSuggestions && filteredMarci.length > 0}>
-                      <div className="search-bar-item" style={{background: '#fff', color: '#222', fontWeight: 500, fontSize: 18, minHeight: 0, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.10)', maxHeight: 180, overflowY: 'auto', padding: 0}}>
+                      <div className="search-bar-item" style={{background: '#fff', color: '#222', fontWeight: 500, fontSize: 18, minHeight: 0, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.10)', maxHeight: 180, overflowY: 'auto', padding: 0, width: dropdownWidth}}>
                         {filteredMarci.slice(0, 8).map((marca, index) => (
                           <div
                             key={index}
