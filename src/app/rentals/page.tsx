@@ -97,13 +97,24 @@ export default function RentalsPage() {
     const fetchBrands = async () => {
       try {
         setLoadingBrands(true);
+        console.log('Fetching brands...');
         const brandsData = await getBrands();
-        const brandNames = brandsData.map(brand => brand.name).sort();
+        console.log('Brands data:', brandsData);
+        let brandNames = brandsData.map(brand => brand.name).sort();
+        console.log('Brand names:', brandNames);
+        // Fallback dacă nu există brands în DB sau lista e goală
+        if ((!brandNames || !brandNames.length) && rentals.length) {
+          console.log('Using fallback brands from rentals');
+          brandNames = Array.from(new Set(rentals.map(rental => rental.marca).filter(Boolean))).sort();
+          console.log('Fallback brand names:', brandNames);
+        }
         setBrands(brandNames);
+        console.log('Final brands set:', brandNames);
       } catch (error) {
         console.error('Error fetching brands:', error);
-        // Fallback to extracting from rentals if brands fetch fails
+        // Fallback la extragere din rentals
         const fallbackBrands = Array.from(new Set(rentals.map(rental => rental.marca).filter(Boolean))).sort();
+        console.log('Error fallback brands:', fallbackBrands);
         setBrands(fallbackBrands);
       } finally {
         setLoadingBrands(false);
@@ -125,8 +136,16 @@ export default function RentalsPage() {
 
   // Update filtered brands when search changes
   useEffect(() => {
+    console.log('Updating filtered brands:', { 
+      searchMarca, 
+      brandsLength: brands.length, 
+      filteredBrandsLength: filteredBrands.length,
+      showSuggestions,
+      filteredMarciLength: filteredMarci.length
+    });
     setFilteredMarci(filteredBrands);
     setShowSuggestions(!!searchMarca.trim());
+    console.log('Show suggestions set to:', !!searchMarca.trim());
   }, [filteredBrands, searchMarca]);
 
   // Handle brand selection - memoized
@@ -146,6 +165,15 @@ export default function RentalsPage() {
       setFilteredMarci(brands);
     }
   }, [brands]);
+
+  // Debug logging for BrandSuggestionsPortal visibility
+  useEffect(() => {
+    console.log('BrandSuggestionsPortal visibility:', { 
+      showSuggestions, 
+      filteredMarciLength: filteredMarci.length,
+      visible: showSuggestions && filteredMarci.length > 0
+    });
+  }, [showSuggestions, filteredMarci.length]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -383,12 +411,12 @@ export default function RentalsPage() {
                 {/* Brand Search */}
                 <div className="search-bar-item text-center">
                   <label className="form-label fw-semibold text-dark mb-1" style={{fontSize: '1rem'}}>Marcă</label>
-                  <div className="position-relative">
+                  <div className="position-relative" style={{width: '100%', maxWidth: 320}}>
                     <input
                       ref={inputRef}
                       type="text"
                       className="form-control rounded-4 px-3 py-2"
-                      style={{ fontSize: '1rem', minHeight: 38, background: '#ffffff', border: '1px solid #e0e0e0', color: '#000000' }}
+                      style={{ fontSize: '1rem', minHeight: 38, background: '#ffffff', border: '1px solid #e0e0e0', color: '#000000', width: '100%' }}
                       placeholder={loadingBrands ? "Se încarcă mărcile..." : "Caută marcă..."}
                       value={searchMarca}
                       onChange={handleBrandInputChange}
@@ -401,19 +429,23 @@ export default function RentalsPage() {
                       disabled={loadingBrands}
                     />
                     <BrandSuggestionsPortal anchorRef={inputRef} visible={showSuggestions && filteredMarci.length > 0}>
-                      <div className="brand-suggestions">
-                        <ul className="list-group shadow-sm">
-                          {filteredMarci.slice(0, 8).map((marca, index) => (
-                            <li
-                              key={index}
-                              onClick={() => handleBrandSelect(marca)}
-                              className="list-group-item list-group-item-action"
-                              style={{ cursor: 'pointer' }}
-                            >
-                              {marca}
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="search-bar-item" style={{background: '#fff', color: '#222', fontWeight: 500, fontSize: 18, minHeight: 0, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.10)', maxHeight: 180, overflowY: 'auto', padding: 0}}>
+                        {filteredMarci.slice(0, 8).map((marca, index) => (
+                          <div
+                            key={index}
+                            onClick={() => handleBrandSelect(marca)}
+                            style={{
+                              padding: '12px 20px',
+                              borderBottom: index !== filteredMarci.length - 1 ? '1px solid #eee' : 'none',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s, color 0.2s',
+                            }}
+                            onMouseOver={e => e.currentTarget.style.background = '#dc3545'}
+                            onMouseOut={e => e.currentTarget.style.background = '#fff'}
+                          >
+                            <span style={{color: 'inherit'}}>{marca}</span>
+                          </div>
+                        ))}
                       </div>
                     </BrandSuggestionsPortal>
                   </div>
@@ -491,8 +523,8 @@ export default function RentalsPage() {
       >
         <div className="container">
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h2 className="h4 mb-0 text-light">
-              <i className="bi bi-car-front me-2"></i>
+            <h2 className="h4 mb-0 text-dark">
+              <i className="bi bi-car-front me-2 text-danger"></i>
               {filtered.length} mașin{filtered.length === 1 ? 'ă' : filtered.length < 20 ? 'i' : ''} de închiriat
             </h2>
           </div>
@@ -506,11 +538,11 @@ export default function RentalsPage() {
             <div className="text-center py-5">
               <div 
                 className="bg-light rounded-4 p-5 shadow-sm"
-                style={{ backgroundColor: 'var(--gray-800) !important' }}
+                style={{ backgroundColor: '#f8f9fa' }}
               >
                 <i className="bi bi-search display-1 text-muted mb-3"></i>
-                <h3 className="text-light mb-3">Nu s-au găsit mașini de închiriat</h3>
-                <p className="text-light opacity-75 mb-4">
+                <h3 className="text-dark mb-3">Nu s-au găsit mașini de închiriat</h3>
+                <p className="text-muted mb-4">
                   Încearcă să modifici filtrele sau să revii mai târziu.
                 </p>
                 <button 

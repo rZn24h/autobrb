@@ -55,14 +55,18 @@ const BrandSuggestionsPortal = memo(function BrandSuggestionsPortal({
         position: 'absolute',
         top: position.top,
         left: position.left,
-        width: position.width,
-        zIndex: 9999,
+        minWidth: position.width,
+        maxWidth: 400,
+        zIndex: 99999,
         backgroundColor: 'white',
         border: '1px solid #ddd',
         borderRadius: '0.375rem',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-        maxHeight: '200px',
-        overflowY: 'auto'
+        boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
+        minHeight: 0,
+        overflowY: 'auto',
+        pointerEvents: 'auto',
+        display: 'block',
+        padding: 0,
       }}
     >
       {children}
