@@ -117,64 +117,81 @@ export default function CarClient({ car }: { car: CarDetails }) {
           <div className="col-lg-8">
             {/* Gallery Container */}
             <div className="gallery-container mb-4 position-relative">
-              {/* Main Image cu săgeți */}
-              <div className="main-image-wrapper mb-2 text-center position-relative" style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                {car.images.length > 1 && (
-                  <button type="button" className="btn btn-dark position-absolute start-0 top-50 translate-middle-y z-2" style={{left: 10, zIndex: 2}} onClick={prevImage}>
-                    <FaChevronLeft />
-                  </button>
-                )}
-                <Image
-                  src={car.images[activeImage]}
-                  alt={`${car.marca} ${car.model} - Imagine ${activeImage + 1}`}
-                  width={800}
-                  height={600}
-                  className="img-fluid"
-                  style={{
-                    objectFit: 'cover',
-                    width: '100%',
-                    height: '400px',
-                    borderRadius: '16px',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 24px rgba(0,0,0,0.18)'
-                  }}
-                  onClick={() => setShowLightbox(true)}
-                  sizes="(max-width: 768px) 100vw, 800px"
-                />
-                {car.images.length > 1 && (
-                  <button type="button" className="btn btn-dark position-absolute end-0 top-50 translate-middle-y z-2" style={{right: 10, zIndex: 2}} onClick={nextImage}>
-                    <FaChevronRight />
-                  </button>
-                )}
-              </div>
-              {/* Thumbnails Row - toate vizibile, fără scroll */}
-              <div className="d-flex flex-row flex-wrap justify-content-center align-items-center gap-2 pb-2" style={{marginTop: 8}}>
-                {car.images.map((image, index) => (
-                  <div key={index} className="thumb-wrapper" style={{ minWidth: 80, maxWidth: 100 }}>
-                    <div
-                      className="position-relative"
+              {/* Image Gallery Card */}
+              <div className="card border-0 shadow-sm" style={{ backgroundColor: 'var(--gray-900)', border: '1px solid var(--gray-800)' }}>
+                <div className="card-body p-3 p-md-4">
+                  <h3 className="h5 mb-3 mb-md-4 text-light">
+                    <i className="bi bi-images text-danger me-2"></i>Galerie foto
+                  </h3>
+                  
+                  {/* Main Image cu săgeți */}
+                  <div className="main-image-wrapper mb-3 text-center position-relative" style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    {car.images.length > 1 && (
+                      <button type="button" className="btn btn-dark position-absolute start-0 top-50 translate-middle-y z-2" style={{left: 10, zIndex: 2}} onClick={prevImage}>
+                        <FaChevronLeft />
+                      </button>
+                    )}
+                    <Image
+                      src={car.images[activeImage]}
+                      alt={`${car.marca} ${car.model} - Imagine ${activeImage + 1}`}
+                      width={800}
+                      height={600}
+                      className="img-fluid"
                       style={{
+                        objectFit: 'cover',
+                        width: '100%',
+                        height: '400px',
+                        borderRadius: '16px',
                         cursor: 'pointer',
-                        border: index === activeImage ? '2px solid #dc3545' : '2px solid transparent',
-                        borderRadius: '8px',
-                        overflow: 'hidden',
-                        boxShadow: index === activeImage ? '0 0 0 2px #fff' : 'none'
+                        boxShadow: '0 4px 24px rgba(0,0,0,0.18)'
                       }}
-                      onClick={() => setActiveImage(index)}
-                    >
-                      <Image
-                        src={image}
-                        alt={`${car.marca} ${car.model} - Thumbnail ${index + 1}`}
-                        width={100}
-                        height={75}
-                        className="img-fluid w-100 h-100"
-                        style={{ objectFit: 'cover', aspectRatio: '4/3' }}
-                        loading="lazy"
-                        sizes="(max-width: 768px) 25vw, 12vw"
-                      />
-                    </div>
+                      onClick={() => setShowLightbox(true)}
+                      sizes="(max-width: 768px) 100vw, 800px"
+                    />
+                    {car.images.length > 1 && (
+                      <button type="button" className="btn btn-dark position-absolute end-0 top-50 translate-middle-y z-2" style={{right: 10, zIndex: 2}} onClick={nextImage}>
+                        <FaChevronRight />
+                      </button>
+                    )}
                   </div>
-                ))}
+                  
+                  {/* Thumbnails Row - toate vizibile, fără scroll */}
+                  <div className="d-flex flex-row flex-wrap justify-content-center align-items-center gap-2" style={{marginTop: 8}}>
+                    {car.images.map((image, index) => (
+                      <div key={index} className="thumb-wrapper" style={{ minWidth: 80, maxWidth: 100 }}>
+                        <div
+                          className="position-relative"
+                          style={{
+                            cursor: 'pointer',
+                            border: index === activeImage ? '2px solid #dc3545' : '2px solid transparent',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            boxShadow: index === activeImage ? '0 0 0 2px #fff' : 'none'
+                          }}
+                          onClick={() => setActiveImage(index)}
+                        >
+                          <Image
+                            src={image}
+                            alt={`${car.marca} ${car.model} - Thumbnail ${index + 1}`}
+                            width={100}
+                            height={75}
+                            className="img-fluid w-100 h-100"
+                            style={{ objectFit: 'cover', aspectRatio: '4/3' }}
+                            loading="lazy"
+                            sizes="(max-width: 768px) 25vw, 12vw"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Image counter */}
+                  <div className="text-center mt-3">
+                    <small className="text-light">
+                      Imagine {activeImage + 1} din {car.images.length}
+                    </small>
+                  </div>
+                </div>
               </div>
             </div>
             {/* Description */}

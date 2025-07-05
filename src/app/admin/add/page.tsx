@@ -250,7 +250,7 @@ export default function AddCarPage() {
         setSuccess('');
         // Optionally redirect to the cars list after success
         if (window.confirm('Anunțul a fost adăugat cu succes! Vrei să vezi lista de anunțuri?')) {
-          router.push('/admin/list');
+          window.location.href = '/admin/list';
         }
       }, 3000);
       setTimeoutId(newTimeoutId);
@@ -278,7 +278,7 @@ export default function AddCarPage() {
                   <button 
                     type="button" 
                     className="btn btn-outline-success btn-sm me-2"
-                    onClick={() => router.push('/admin/list')}
+                    onClick={() => window.location.href = '/admin/list'}
                   >
                     Vezi lista de anunțuri
                   </button>

@@ -17,13 +17,25 @@ export async function processImage(file: File): Promise<ProcessedImage | null> {
     const imageUrl = URL.createObjectURL(file);
     
     await new Promise((resolve, reject) => {
-      img.onload = resolve;
-      img.onerror = reject;
+      const timeout = setTimeout(() => {
+        URL.revokeObjectURL(imageUrl);
+        reject(new Error('Timeout la încărcarea imaginii'));
+      }, 10000); // 10 second timeout
+      
+      img.onload = () => {
+        clearTimeout(timeout);
+        URL.revokeObjectURL(imageUrl);
+        resolve(null);
+      };
+      img.onerror = () => {
+        clearTimeout(timeout);
+        URL.revokeObjectURL(imageUrl);
+        reject(new Error('Eroare la încărcarea imaginii'));
+      };
       img.src = imageUrl;
     });
 
     if (img.width > 4000 || img.height > 4000) {
-      URL.revokeObjectURL(imageUrl);
       throw new Error('Dimensiunile imaginii sunt prea mari. Dimensiunea maximă permisă este 4000x4000 pixeli.');
     }
 
@@ -37,15 +49,13 @@ export async function processImage(file: File): Promise<ProcessedImage | null> {
     const compressedFile = await imageCompression(file, options);
     const compressedUrl = URL.createObjectURL(compressedFile);
 
-    // Eliberează URL-ul original
-    URL.revokeObjectURL(imageUrl);
-
     return {
       file: compressedFile,
       url: compressedUrl
     };
 
   } catch (error) {
+    console.error('Error processing image:', error);
     if (error instanceof Error) {
       throw new Error(`Eroare la procesarea imaginii: ${error.message}`);
     }

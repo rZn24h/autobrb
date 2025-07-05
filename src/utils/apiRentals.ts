@@ -31,19 +31,24 @@ export const addRental = async (
   try {
     // Upload images to Firebase Storage
     const imageUrls: string[] = [];
-    const uploadPromises = images.map(async (image, index) => {
-      const processedImage = await processImage(image);
-      if (!processedImage) {
-        throw new Error(`Eroare la procesarea imaginii ${index + 1}`);
+    
+    // Process images sequentially to avoid overwhelming the browser
+    for (let i = 0; i < images.length; i++) {
+      try {
+        const image = images[i];
+        const processedImage = await processImage(image);
+        if (!processedImage) {
+          throw new Error(`Eroare la procesarea imaginii ${i + 1}`);
+        }
+        const imageRef = ref(storage, `rentals/${Date.now()}_${i}_${image.name}`);
+        const snapshot = await uploadBytes(imageRef, processedImage.file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        imageUrls.push(downloadURL);
+      } catch (error) {
+        console.error(`Error processing image ${i + 1}:`, error);
+        throw new Error(`Eroare la procesarea imaginii ${i + 1}: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
       }
-      const imageRef = ref(storage, `rentals/${Date.now()}_${index}_${image.name}`);
-      const snapshot = await uploadBytes(imageRef, processedImage.file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      return downloadURL;
-    });
-
-    const uploadedUrls = await Promise.all(uploadPromises);
-    imageUrls.push(...uploadedUrls);
+    }
 
     // Prepare rental data
     const rentalData = {
@@ -68,7 +73,7 @@ export const addRental = async (
     };
   } catch (error) {
     console.error('Error adding rental:', error);
-    throw new Error('Eroare la adăugarea închirierii');
+    throw new Error(error instanceof Error ? error.message : 'Eroare la adăugarea închirierii');
   }
 };
 

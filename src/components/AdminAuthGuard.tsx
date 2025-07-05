@@ -32,14 +32,27 @@ export default function AdminAuthGuard({ children }: Props) {
             router.replace("/");
           }
         } catch (e) {
+          console.error('Error checking admin role:', e);
           router.replace("/");
         } finally {
           setChecking(false);
         }
       };
+      
+      // Add timeout to prevent infinite loading
+      const timeout = setTimeout(() => {
+        if (checking) {
+          console.error('Admin check timeout');
+          setChecking(false);
+          router.replace("/");
+        }
+      }, 10000); // 10 second timeout
+      
       checkRole();
+      
+      return () => clearTimeout(timeout);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, checking]);
 
   if (loading || checking) {
     return (

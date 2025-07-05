@@ -64,11 +64,13 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({
     }
 
     try {
+      setBrandError('');
       await addNewBrand(newBrandName.trim());
       setNewBrandName('');
       setSelectedOption('existing');
       onChange(newBrandName.trim());
     } catch (err) {
+      console.error('Error adding brand:', err);
       setBrandError(err instanceof Error ? err.message : 'Eroare la adăugarea mărcii');
     }
   };

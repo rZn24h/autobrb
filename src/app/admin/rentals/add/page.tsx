@@ -225,7 +225,14 @@ export default function AddRentalPage() {
       setIntervalInput({ days: '', price: '' });
       if (fileInputRef.current) fileInputRef.current.value = '';
       
-      setTimeout(() => setSuccess(''), 5000);
+      // Clear success message after 3 seconds and offer navigation
+      setTimeout(() => {
+        setSuccess('');
+        // Offer navigation to list page
+        if (window.confirm('Anunțul a fost adăugat cu succes! Vrei să vezi lista de închirieri?')) {
+          window.location.href = '/admin/rentals/list';
+        }
+      }, 3000);
     } catch (err: any) {
       setError(err.message || 'Eroare la adăugarea anunțului de închiriat');
       console.error('Error adding rental:', err);

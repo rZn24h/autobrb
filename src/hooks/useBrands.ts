@@ -18,6 +18,7 @@ export const useBrands = () => {
       const brandsData = await getBrands();
       setBrands(brandsData);
     } catch (err) {
+      console.error('Error loading brands:', err);
       setError(err instanceof Error ? err.message : 'Eroare la încărcarea mărcilor');
     } finally {
       setLoading(false);
@@ -34,6 +35,7 @@ export const useBrands = () => {
       
       return newBrand;
     } catch (err) {
+      console.error('Error adding brand:', err);
       const errorMessage = err instanceof Error ? err.message : 'Eroare la adăugarea mărcii';
       setError(errorMessage);
       throw err;
