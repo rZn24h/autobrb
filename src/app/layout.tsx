@@ -80,6 +80,13 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="//identitytoolkit.googleapis.com" />
         <link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
         
+        {/* Preload fonturi critice pentru a evita CLS */}
+        <link 
+          rel="preload" 
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" 
+          as="style"
+        />
+        
         {/* Preload resurse critice */}
         <link 
           rel="preload" 
@@ -92,7 +99,11 @@ export default function RootLayout({
           as="style"
         />
         
-        {/* Load CSS critic */}
+        {/* Load CSS critic cu display swap pentru fonturi */}
+        <link 
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" 
+          rel="stylesheet"
+        />
         <link 
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" 
           rel="stylesheet"
@@ -101,6 +112,44 @@ export default function RootLayout({
           rel="stylesheet" 
           href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
         />
+        
+        {/* Critical CSS inline pentru a evita CLS */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            /* Font fallback pentru a evita CLS */
+            body {
+              font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              font-display: swap;
+            }
+            
+            /* Dimensiuni fixe pentru imagini pentru a evita CLS */
+            .car-image {
+              opacity: 0;
+              transition: opacity 0.3s ease;
+            }
+            .car-image[src] {
+              opacity: 1;
+            }
+            
+            /* Skeleton loading styles */
+            .placeholder-glow {
+              animation: placeholder-glow 2s ease-in-out infinite alternate;
+            }
+            @keyframes placeholder-glow {
+              0% { opacity: 0.5; }
+              100% { opacity: 1; }
+            }
+            .placeholder {
+              background-color: #e9ecef;
+              border-radius: 0.375rem;
+            }
+            
+            /* Optimizări pentru Vercel */
+            .next-image {
+              display: block;
+            }
+          `
+        }} />
       </head>
       <body className={`${inter.className} ${inter.variable}`}>
         <AuthProvider>

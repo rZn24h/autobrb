@@ -411,7 +411,12 @@ body {
 
 /* Price Tag Styles */
 .price-tag {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--danger-color);
   transition: transform 0.2s ease;
+  margin-top: auto;
+  padding-top: 0.5rem;
 }
 
 .hover-card:hover .price-tag {
@@ -533,7 +538,7 @@ textarea::placeholder {
 .car-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--light-color);
+  color: #ffffff;
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;

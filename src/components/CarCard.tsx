@@ -50,25 +50,33 @@ const CarCard = memo(function CarCard({ car, type = 'sale', priority = false }: 
         transition: 'transform 0.2s ease, box-shadow 0.2s ease'
       }}
     >
-      {/* Car Image - Optimizat pentru performanță */}
-      <div className="position-relative card-img-wrapper" style={{overflow: 'hidden', borderTopLeftRadius: 'calc(0.375rem - 1px)', borderTopRightRadius: 'calc(0.375rem - 1px)'}}>
+      {/* Car Image - Optimizat pentru performanță și CLS */}
+      <div 
+        className="position-relative card-img-wrapper" 
+        style={{
+          overflow: 'hidden', 
+          borderTopLeftRadius: 'calc(0.375rem - 1px)', 
+          borderTopRightRadius: 'calc(0.375rem - 1px)',
+          height: '200px', // Dimensiune fixă pentru a evita CLS
+          width: '100%'
+        }}
+      >
         <Image
           src={displayImage}
           alt={`${car.marca} ${car.model} - ${car.an}`}
-          width={400}
-          height={250}
+          fill
           priority={priority}
           loading={priority ? 'eager' : 'lazy'}
           className="car-image"
           style={{
             objectFit: 'cover',
             width: '100%',
-            height: '200px'
+            height: '100%'
           }}
           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
           placeholder="blur"
           blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyLDSBGLwGXXKmSGfLzBgRGC5bLAJkpb0bLWQz8jLYJLpbKYdFqg2AzIZsxjnOEcYDXDJOjDpGcILRiHEgVmxhDEgZzQjkJIKRBBOOBvABGXMwQQfHgIIE/9k="
-          quality={85}
+          quality={75}
           onLoad={(e) => {
             // Optimizare pentru CLS
             const target = e.target as HTMLImageElement;
@@ -82,10 +90,27 @@ const CarCard = memo(function CarCard({ car, type = 'sale', priority = false }: 
         />
       </div>
 
-      {/* Car Details */}
-      <div className="card-body d-flex flex-column">
-        <h5 className="card-title car-title mb-2">{car.title}</h5>
+      {/* Car Details - Repoziționat */}
+      <div className="card-body d-flex flex-column" style={{ height: '100%' }}>
+        {/* Titlu - Culoare albă */}
+        <h5 
+          className="card-title mb-3" 
+          style={{
+            color: '#ffffff',
+            fontSize: '1.1rem',
+            fontWeight: '600',
+            lineHeight: '1.3',
+            display: '-webkit-box',
+            WebkitLineClamp: '2',
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            minHeight: '2.6rem'
+          }}
+        >
+          {car.title}
+        </h5>
         
+        {/* Informații despre mașină */}
         <div className="specs-grid mb-3">
           <div className="spec-item">
             <FaRoad className="spec-icon" />
@@ -105,12 +130,17 @@ const CarCard = memo(function CarCard({ car, type = 'sale', priority = false }: 
           </div>
         </div>
         
+        {/* Informații despre mașină - partea de jos */}
         <div className="mt-auto">
-          <div className="price-tag text-center mb-2">{displayPrice}</div>
-          <div className="text-center">
+          <div className="text-center mb-2">
             <small className="text-muted">
               {car.marca} {car.model} • {car.an}
             </small>
+          </div>
+          
+          {/* Preț - Poziționat în partea de jos */}
+          <div className="price-tag text-center" style={{ marginTop: 'auto' }}>
+            {displayPrice}
           </div>
         </div>
       </div>
