@@ -3,13 +3,15 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import Script from 'next/script';
-import dynamic from 'next/dynamic';
 
-// Lazy load Footer component pentru reducerea bundle size
-const Footer = dynamic(() => import('@/components/Footer'), {
-  loading: () => <div style={{ height: '200px' }}></div>,
-  ssr: false
+// Optimizare font - preload și display swap
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true,
+  variable: '--font-inter',
 });
 
 // Lazy load metadata function pentru a evita problemele cu Firebase în build
@@ -50,14 +52,6 @@ const getMetadata = async () => {
     metadataBase: new URL('https://autobrb.vercel.app'),
   };
 };
-
-// Optimizare font - preload și display swap
-const inter = Inter({ 
-  subsets: ["latin"],
-  display: 'swap',
-  preload: true,
-  variable: '--font-inter',
-});
 
 export const generateMetadata = async (): Promise<Metadata> => {
   const metadata = await getMetadata();
