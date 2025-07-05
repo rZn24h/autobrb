@@ -4,25 +4,21 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from '@/components/Navbar';
 import Script from 'next/script';
-import { db } from '@/utils/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 import dynamic from 'next/dynamic';
 
-// Lazy load Footer component
+// Lazy load Footer component pentru reducerea bundle size
 const Footer = dynamic(() => import('@/components/Footer'), {
   loading: () => <div style={{ height: '200px' }}></div>,
+  ssr: false
 });
 
-// Optimizare font - preload și display swap
-const inter = Inter({ 
-  subsets: ["latin"],
-  display: 'swap',
-  preload: true,
-  variable: '--font-inter',
-});
-
-async function getMetadata() {
+// Lazy load metadata function pentru a evita problemele cu Firebase în build
+const getMetadata = async () => {
   try {
+    // Import dinamic pentru a evita problemele cu Firebase în build
+    const { db } = await import('@/utils/firebase');
+    const { doc, getDoc } = await import('firebase/firestore');
+    
     const docRef = doc(db, 'config', 'public');
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
@@ -53,7 +49,15 @@ async function getMetadata() {
     description: 'AutoBRB - Platforma ta de încredere pentru mașini',
     metadataBase: new URL('https://autobrb.vercel.app'),
   };
-}
+};
+
+// Optimizare font - preload și display swap
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true,
+  variable: '--font-inter',
+});
 
 export const generateMetadata = async (): Promise<Metadata> => {
   const metadata = await getMetadata();
@@ -68,11 +72,21 @@ export default function RootLayout({
   return (
     <html lang="ro">
       <head>
-        {/* Preconnect for Google Fonts */}
+        {/* Preconnect pentru performanță maximă */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://firestore.googleapis.com" />
+        <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
+        <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" />
         
-        {/* Preload critical resources */}
+        {/* DNS prefetch pentru resurse externe */}
+        <link rel="dns-prefetch" href="//firestore.googleapis.com" />
+        <link rel="dns-prefetch" href="//firebasestorage.googleapis.com" />
+        <link rel="dns-prefetch" href="//identitytoolkit.googleapis.com" />
+        <link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
+        
+        {/* Preload resurse critice */}
         <link 
           rel="preload" 
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" 
@@ -84,7 +98,7 @@ export default function RootLayout({
           as="style"
         />
         
-        {/* Load CSS */}
+        {/* Load CSS critic */}
         <link 
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" 
           rel="stylesheet"
@@ -93,16 +107,6 @@ export default function RootLayout({
           rel="stylesheet" 
           href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
         />
-        
-        {/* DNS prefetch pentru Firebase */}
-        <link rel="dns-prefetch" href="//firestore.googleapis.com" />
-        <link rel="dns-prefetch" href="//firebasestorage.googleapis.com" />
-        <link rel="dns-prefetch" href="//identitytoolkit.googleapis.com" />
-        
-        {/* Preconnect pentru Firebase */}
-        <link rel="preconnect" href="https://firestore.googleapis.com" />
-        <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
-        <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
       </head>
       <body className={`${inter.className} ${inter.variable}`}>
         <AuthProvider>
@@ -115,12 +119,26 @@ export default function RootLayout({
           </div>
         </AuthProvider>
         
-        {/* Load Bootstrap JS with optimized strategy */}
+        {/* Scripts ne-esențiale cu strategy optimizat */}
         <Script
           src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
           strategy="lazyOnload"
           defer
         />
+        
+        {/* Analytics și scripturi externe cu strategy afterInteractive */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'GA_MEASUREMENT_ID');
+          `}
+        </Script>
       </body>
     </html>
   );

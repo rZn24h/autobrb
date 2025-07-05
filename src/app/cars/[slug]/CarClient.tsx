@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { FaChevronLeft, FaChevronRight, FaRoad, FaGasPump, FaCog, FaCar, FaTachometerAlt, FaWhatsapp, FaPhone, FaCalendar, FaBolt, FaProjectDiagram } from 'react-icons/fa';
+import { BiPhone, BiEnvelope } from 'react-icons/bi';
 import { useConfig } from '@/hooks/useConfig';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -51,6 +52,7 @@ export default function CarClient({ car }: { car: CarDetails }) {
   const images: string[] = car.images || [];
   const [activeImage, setActiveImage] = useState(0);
   const [showLightbox, setShowLightbox] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleImageClick = (index: number) => {
     setActiveImage(index);
@@ -100,6 +102,19 @@ export default function CarClient({ car }: { car: CarDetails }) {
   const whatsappMsg = encodeURIComponent(`Salut! Sunt interesat de anunțul cu ${car.marca} ${car.model}.`);
   const whatsappLink = config?.whatsapp ? `https://wa.me/${config.whatsapp.replace(/\D/g, '')}` : '';
 
+  useEffect(() => {
+    // Optimizare pentru CLS - setează loading la false după ce prima imagine se încarcă
+    if (car.images && car.images.length > 0) {
+      const img = new window.Image();
+      img.onload = () => setIsLoading(false);
+      img.src = car.images[0];
+    } else {
+      setIsLoading(false);
+    }
+  }, [car.images]);
+
+  const formattedKm = new Intl.NumberFormat('ro-RO').format(car.km);
+
   return (
     <div className="car-details-page" style={{ backgroundColor: 'var(--background-main)' }}>
       {/* Back button */}
@@ -131,23 +146,38 @@ export default function CarClient({ car }: { car: CarDetails }) {
                         <FaChevronLeft />
                       </button>
                     )}
-                    <Image
-                      src={car.images[activeImage]}
-                      alt={`${car.marca} ${car.model} - Imagine ${activeImage + 1}`}
-                      width={800}
-                      height={600}
-                      className="img-fluid"
-                      style={{
-                        objectFit: 'cover',
-                        width: '100%',
-                        height: '400px',
-                        borderRadius: '16px',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 24px rgba(0,0,0,0.18)'
-                      }}
-                      onClick={() => setShowLightbox(true)}
-                      sizes="(max-width: 768px) 100vw, 800px"
-                    />
+                    <div className="main-image-container position-relative" style={{ height: '400px', borderRadius: '12px', overflow: 'hidden' }}>
+                      {isLoading && (
+                        <div className="position-absolute w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'var(--gray-800)', zIndex: 1 }}>
+                          <div className="spinner-border text-primary" role="status">
+                            <span className="visually-hidden">Se încarcă imaginea...</span>
+                          </div>
+                        </div>
+                      )}
+                      <Image
+                        src={car.images[activeImage]}
+                        alt={`${car.marca} ${car.model} - Imagine ${activeImage + 1}`}
+                        fill
+                        priority={activeImage === 0}
+                        loading={activeImage === 0 ? 'eager' : 'lazy'}
+                        className="main-image"
+                        style={{
+                          objectFit: 'cover',
+                          opacity: isLoading ? 0 : 1,
+                          transition: 'opacity 0.3s ease'
+                        }}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 50vw"
+                        quality={85}
+                        placeholder="blur"
+                        blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyLDSBGLwGXXKmSGfLzBgRGC5bLAJkpb0bLWQz8jLYJLpbKYdFqg2AzIZsxjnOEcYDXDJOjDpGcILRiHEgVmxhDEgZzQjkJIKRBBOOBvABGXMwQQfHgIIE/9k="
+                        onLoad={() => setIsLoading(false)}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/placeholder-car.jpg';
+                          setIsLoading(false);
+                        }}
+                      />
+                    </div>
                     {car.images.length > 1 && (
                       <button type="button" className="btn btn-dark position-absolute end-0 top-50 translate-middle-y z-2" style={{right: 10, zIndex: 2}} onClick={nextImage}>
                         <FaChevronRight />
@@ -179,6 +209,7 @@ export default function CarClient({ car }: { car: CarDetails }) {
                             style={{ objectFit: 'cover', aspectRatio: '4/3' }}
                             loading="lazy"
                             sizes="(max-width: 768px) 25vw, 12vw"
+                            quality={75}
                           />
                         </div>
                       </div>
@@ -247,7 +278,7 @@ export default function CarClient({ car }: { car: CarDetails }) {
                     <div className="d-flex flex-column align-items-center justify-content-center p-3 rounded-3" style={{ backgroundColor: 'var(--gray-700)' }}>
                       <FaRoad className="text-danger mb-1" style={{ fontSize: '1.6rem' }} />
                       <div className="small text-light mb-1">Kilometraj</div>
-                      <div className="fw-bold text-light" style={{ fontSize: '1.15rem' }}>{new Intl.NumberFormat('ro-RO').format(car.km)} km</div>
+                      <div className="fw-bold text-light" style={{ fontSize: '1.15rem' }}>{formattedKm} km</div>
                     </div>
                   </div>
                   <div className="col-12 col-md-4">
@@ -340,7 +371,7 @@ export default function CarClient({ car }: { car: CarDetails }) {
                   </li>
                   <li className="d-flex align-items-center py-2 border-bottom border-gray-700">
                     <FaTachometerAlt className="text-danger me-3" style={{ fontSize: '1.2rem', minWidth: '28px' }} />
-                    <span className="text-light" style={{ fontSize: '1.05rem' }}>{new Intl.NumberFormat('ro-RO').format(car.km)} km</span>
+                    <span className="text-light" style={{ fontSize: '1.05rem' }}>{formattedKm} km</span>
                   </li>
                   <li className="d-flex align-items-center py-2 border-bottom border-gray-700">
                     <FaCar className="text-danger me-3" style={{ fontSize: '1.2rem', minWidth: '28px' }} />

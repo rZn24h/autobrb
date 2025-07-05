@@ -14,12 +14,35 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let app: any;
+let auth: any;
+let db: any;
+let storage: any;
 
-// Initialize Firebase services
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+// Lazy initialization pentru a evita problemele cu undici în build
+if (typeof window !== 'undefined') {
+  // Client-side initialization
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+} else {
+  // Server-side initialization cu fallback
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+  } catch (error) {
+    console.warn('Firebase initialization failed on server:', error);
+    // Fallback pentru server-side rendering
+    app = null;
+    auth = null;
+    db = null;
+    storage = null;
+  }
+}
 
-// Export the app instance if needed
+// Export the services
+export { auth, db, storage };
 export default app; 

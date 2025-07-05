@@ -33,10 +33,10 @@ function slugify(str: string) {
     .replace(/(^-|-$)+/g, '');
 }
 
-// Pagination constants
+// Pagination constants - optimizat pentru mobile
 const INITIAL_LIMIT = 6;
 const LOAD_MORE_LIMIT = 6;
-const PRIORITY_IMAGES_COUNT = 5; // Primele 5 anunțuri cu încărcare prioritară
+const PRIORITY_IMAGES_COUNT = 3; // Redus pentru mobile
 
 export default function HomePage() {
   const [cars, setCars] = useState<any[]>([]);
@@ -60,24 +60,25 @@ export default function HomePage() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // Fetch brands from Firestore
-  useEffect(() => {
-    const fetchBrands = async () => {
-      try {
-        setLoadingBrands(true);
-        const brandsData = await getBrands();
-        const brandNames = brandsData.map(brand => brand.name).sort();
-        setBrands(brandNames);
-      } catch (error) {
-        console.error('Error fetching brands:', error);
-        const fallbackBrands = Array.from(new Set(cars.map(car => car.marca).filter(Boolean))).sort();
-        setBrands(fallbackBrands);
-      } finally {
-        setLoadingBrands(false);
-      }
-    };
-    fetchBrands();
+  // Fetch brands from Firestore - optimizat cu useCallback
+  const fetchBrands = useCallback(async () => {
+    try {
+      setLoadingBrands(true);
+      const brandsData = await getBrands();
+      const brandNames = brandsData.map(brand => brand.name).sort();
+      setBrands(brandNames);
+    } catch (error) {
+      console.error('Error fetching brands:', error);
+      const fallbackBrands = Array.from(new Set(cars.map(car => car.marca).filter(Boolean))).sort();
+      setBrands(fallbackBrands);
+    } finally {
+      setLoadingBrands(false);
+    }
   }, [cars]);
+
+  useEffect(() => {
+    fetchBrands();
+  }, [fetchBrands]);
 
   // Filter brands based on search input - memoized
   const filteredBrands = useMemo(() => {
@@ -92,49 +93,33 @@ export default function HomePage() {
 
   // Update filtered brands when search changes
   useEffect(() => {
-    console.log('Updating filtered brands:', { searchMarca, brandsLength: brands.length });
     setFilteredMarci(filteredBrands);
     if (!searchMarca.trim() && showSuggestions) {
       setFilteredMarci(brands);
     }
-    console.log('Show suggestions set to:', !!searchMarca.trim());
   }, [filteredBrands, searchMarca, showSuggestions, brands]);
 
   // Handle brand selection - memoized
   const handleBrandSelect = useCallback((selectedMarca: string, event?: React.MouseEvent) => {
-    console.log('=== BRAND SELECTION START ===');
-    console.log('Selected marca:', selectedMarca);
-    
     if (event) {
       event.preventDefault();
       event.stopPropagation();
-      console.log('Event prevented and stopped');
     }
     
-    console.log('Setting marca to:', selectedMarca);
     setMarca(selectedMarca);
-    
-    console.log('Setting searchMarca to:', selectedMarca);
     setSearchMarca(selectedMarca);
-    
-    console.log('Hiding suggestions');
     setShowSuggestions(false);
     
     if (inputRef.current) {
-      console.log('Directly setting input value to:', selectedMarca);
       inputRef.current.value = selectedMarca;
     }
     
     setTimeout(() => {
       if (inputRef.current) {
-        console.log('Focusing input and ensuring value');
         inputRef.current.focus();
         inputRef.current.value = selectedMarca;
-        console.log('Input value after focus:', inputRef.current.value);
       }
     }, 10);
-    
-    console.log('=== BRAND SELECTION END ===');
   }, []);
 
   // Handle input change - memoized
@@ -154,20 +139,16 @@ export default function HomePage() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      console.log('Click outside detected on:', target.className);
       
       if (target.closest('.brand-suggestions') || target.closest('.suggestion-item')) {
-        console.log('Click on dropdown - not closing');
         return;
       }
       
       if (target.closest('input[type="text"]')) {
-        console.log('Click on input - not closing');
         return;
       }
       
       if (!target.closest('.search-bar-item')) {
-        console.log('Click outside search bar - closing dropdown');
         setShowSuggestions(false);
       }
     };
@@ -176,28 +157,29 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch initial cars
-  useEffect(() => {
-    const fetchCars = async () => {
-      setLoading(true);
-      try {
-        const q = query(collection(db, 'cars'), orderBy('createdAt', 'desc'), limit(INITIAL_LIMIT));
-        const snap = await getDocs(q);
-        const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        setCars(data);
-        setFiltered(data);
-        setHasMore(snap.docs.length === INITIAL_LIMIT);
-      } catch (error) {
-        console.error('Error fetching cars:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCars();
+  // Fetch initial cars - optimizat
+  const fetchInitialCars = useCallback(async () => {
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'cars'), orderBy('createdAt', 'desc'), limit(INITIAL_LIMIT));
+      const snap = await getDocs(q);
+      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      setCars(data);
+      setFiltered(data);
+      setHasMore(snap.docs.length === INITIAL_LIMIT);
+    } catch (error) {
+      console.error('Error fetching cars:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Load more cars function
+  useEffect(() => {
+    fetchInitialCars();
+  }, [fetchInitialCars]);
+
+  // Load more cars function - optimizat cu IntersectionObserver
   const loadMoreCars = useCallback(async () => {
     if (loadingMore || !hasMore) return;
     
@@ -229,25 +211,27 @@ export default function HomePage() {
     }
   }, [cars, loadingMore, hasMore]);
 
-  // Setup intersection observer for infinite scroll
+  // Setup intersection observer for infinite scroll - optimizat
   useEffect(() => {
     if (!loadMoreRef.current) return;
 
-    observerRef.current = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loadingMore) {
           loadMoreCars();
         }
       },
-      { threshold: 0.1 }
+      { 
+        threshold: 0.1,
+        rootMargin: '100px' // Încarcă mai devreme pentru UX mai bun
+      }
     );
 
-    observerRef.current.observe(loadMoreRef.current);
+    observer.observe(loadMoreRef.current);
+    observerRef.current = observer;
 
     return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
+      observer.disconnect();
     };
   }, [hasMore, loadingMore, loadMoreCars]);
 
@@ -256,11 +240,8 @@ export default function HomePage() {
     setSortBy(current => current === option ? null : option);
   }, []);
 
-  // Filter and sort cars - memoized
+  // Filter and sort cars - memoized și optimizat
   useEffect(() => {
-    console.log('Filtering cars with marca:', marca);
-    console.log('Total cars:', cars.length);
-    
     let result = [...cars];
 
     // Filter by brand
@@ -268,11 +249,8 @@ export default function HomePage() {
       result = result.filter(car => {
         const carMarca = car.marca ? car.marca.toLowerCase() : '';
         const searchMarca = marca.toLowerCase();
-        const matches = carMarca.includes(searchMarca);
-        console.log(`Car ${car.id}: marca="${car.marca}" matches="${searchMarca}" = ${matches}`);
-        return matches;
+        return carMarca.includes(searchMarca);
       });
-      console.log('Cars after brand filter:', result.length);
     }
 
     // Filter by price range
@@ -294,7 +272,6 @@ export default function HomePage() {
       });
     }
 
-    console.log('Final filtered cars:', result.length);
     setFiltered(result);
   }, [cars, marca, pretMin, pretMax, sortBy]);
 
@@ -310,7 +287,7 @@ export default function HomePage() {
 
   return (
     <div className="page-wrapper">
-      {/* Hero Section with Banner */}
+      {/* Hero Section with Banner - optimizat */}
       <section 
         className="hero-section position-relative d-flex align-items-center justify-content-center text-white"
         style={{
@@ -319,11 +296,11 @@ export default function HomePage() {
           marginTop: '-56px'
         }}
       >
-        {/* Banner Image */}
+        {/* Banner Image - optimizat cu priority */}
         {config?.bannerImg ? (
           <Image
             src={config.bannerImg}
-            alt="Banner"
+            alt="Banner AutoBRB"
             fill
             priority
             className="position-absolute"
@@ -332,6 +309,9 @@ export default function HomePage() {
               zIndex: 0
             }}
             sizes="100vw"
+            quality={85}
+            placeholder="blur"
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyLDSBGLwGXXKmSGfLzBgRGC5bLAJkpb0bLWQz8jLYJLpbKYdFqg2AzIZsxjnOEcYDXDJOjDpGcILRiHEgVmxhDEgZzQjkJIKRBBOOBvABGXMwQQfHgIIE/9k="
           />
         ) : (
           <div 
@@ -371,7 +351,7 @@ export default function HomePage() {
                 <p className="lead mb-0">{config.slogan}</p>
               ) : null}
 
-              {/* Search Section */}
+              {/* Search Section - optimizat pentru mobile */}
               <div className="search-container mt-4 d-flex justify-content-center">
                 <div className="search-bar w-100">
                   {/* Brand Search */}
@@ -472,7 +452,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Main Content */}
+      {/* Main Content - optimizat pentru mobile */}
       <div className="main-container py-5">
         <div className="listings-container">
           <div className="listings-header mb-4">
@@ -499,7 +479,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Cars Grid */}
+          {/* Cars Grid - optimizat cu lazy loading */}
           {loading ? (
             <div className="text-center py-5">
               <div className="spinner-border text-primary" role="status">
@@ -514,7 +494,7 @@ export default function HomePage() {
                 ))}
               </div>
               
-              {/* Load More Trigger */}
+              {/* Load More Trigger - optimizat cu IntersectionObserver */}
               {hasMore && (
                 <div ref={loadMoreRef} className="text-center py-4">
                   {loadingMore ? (
