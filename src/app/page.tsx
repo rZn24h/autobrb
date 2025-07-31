@@ -1,11 +1,28 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { collection, getDocs, query, orderBy, limit, startAfter } from 'firebase/firestore';
 import { db } from '@/utils/firebase';
 import Link from 'next/link';
 import { useConfig } from '@/hooks/useConfig';
-import CarCard from '@/components/CarCard';
+import dynamic from 'next/dynamic';
+import { getBrands } from '@/utils/apiBrands';
+import BrandSuggestionsPortal from '@/components/BrandSuggestionsPortal';
+import { ProgressiveList, SkeletonLoader } from '@/components/ProgressiveLoader';
+
+// Lazy load CarCard pentru a reduce bundle size
+const CarCard = dynamic(() => import('@/components/CarCard'), {
+  loading: () => <div className="card h-100 border-0 shadow-sm" style={{ backgroundColor: 'var(--gray-800)' }}>
+    <div className="placeholder-glow">
+      <div className="placeholder" style={{ height: '200px' }}></div>
+      <div className="card-body">
+        <div className="placeholder col-8 mb-2"></div>
+        <div className="placeholder col-6"></div>
+      </div>
+    </div>
+  </div>,
+  ssr: false
+});
 
 type SortOption = 'price-asc' | 'price-desc';
 
@@ -15,6 +32,11 @@ function slugify(str: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
 }
+
+// Cache pentru datele mașinilor
+let carsCache: any[] = [];
+let lastFetchTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minute
 
 export default function HomePage() {
   const [cars, setCars] = useState<any[]>([]);
@@ -27,50 +49,144 @@ export default function HomePage() {
   const [pretMax, setPretMax] = useState('');
   const [sortBy, setSortBy] = useState<SortOption | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [lastDoc, setLastDoc] = useState<any>(null);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [loadingBrands, setLoadingBrands] = useState(true);
   const { config, loading: loadingConfig } = useConfig();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // Extract unique brands from cars
-  const allMarci = useMemo(() => {
-    return Array.from(new Set(cars.map(car => car.marca).filter(Boolean))).sort();
+  // Intersection Observer pentru infinite scroll
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasMore && !loadingMore) {
+          loadMoreCars();
+        }
+      },
+      {
+        rootMargin: '100px',
+        threshold: 0.1,
+      }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMore, loadingMore]);
+
+  // Fetch brands from Firestore
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        setLoadingBrands(true);
+        const brandsData = await getBrands();
+        const brandNames = brandsData.map(brand => brand.name).sort();
+        setBrands(brandNames);
+      } catch (error) {
+        console.error('Error fetching brands:', error);
+        // Fallback to extracting from cars if brands fetch fails
+        const fallbackBrands = Array.from(new Set(cars.map(car => car.marca).filter(Boolean))).sort();
+        setBrands(fallbackBrands);
+      } finally {
+        setLoadingBrands(false);
+      }
+    };
+    fetchBrands();
   }, [cars]);
 
-  // Filter brands based on search input
-  useEffect(() => {
+  // Filter brands based on search input - memoized
+  const filteredBrands = useMemo(() => {
     const searchTerm = searchMarca.trim().toLowerCase();
     if (searchTerm) {
-      const filtered = allMarci.filter(marca => 
+      return brands.filter(marca => 
         marca.toLowerCase().includes(searchTerm)
       );
-      setFilteredMarci(filtered);
-      setShowSuggestions(true);
-    } else {
-      setFilteredMarci(allMarci);
-      setShowSuggestions(false);
     }
-  }, [searchMarca, allMarci]);
+    return brands;
+  }, [searchMarca, brands]);
 
-  // Handle brand selection
-  const handleBrandSelect = (selectedMarca: string) => {
+  // Update filtered brands when search changes
+  useEffect(() => {
+    setFilteredMarci(filteredBrands);
+    // Only hide suggestions if user explicitly clears the input
+    if (!searchMarca.trim() && showSuggestions) {
+      // Keep suggestions visible but show all brands
+      setFilteredMarci(brands);
+    }
+  }, [filteredBrands, searchMarca, showSuggestions, brands]);
+
+  // Handle brand selection - memoized
+  const handleBrandSelect = useCallback((selectedMarca: string, event?: React.MouseEvent) => {
+    // Prevent any default behavior and stop propagation
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    // Force immediate update of both states
     setMarca(selectedMarca);
     setSearchMarca(selectedMarca);
     setShowSuggestions(false);
-  };
+    
+    // Force input update by directly setting the value
+    if (inputRef.current) {
+      inputRef.current.value = selectedMarca;
+    }
+    
+    // Focus input for better UX
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        // Ensure the value is set correctly
+        inputRef.current.value = selectedMarca;
+      }
+    }, 10);
+  }, []);
 
-  // Handle input change
-  const handleBrandInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle input change - memoized
+  const handleBrandInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchMarca(value);
     setShowSuggestions(true);
     if (!value.trim()) {
       setMarca('');
-      setFilteredMarci(allMarci);
+      setFilteredMarci(brands);
+    } else {
+      // Update marca when typing for real-time filtering
+      setMarca(value);
     }
-  };
+  }, [brands]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
+      
+      // Don't close if clicking on dropdown items
+      if (target.closest('.brand-suggestions') || target.closest('.suggestion-item')) {
+        return;
+      }
+      
+      // Don't close if clicking on the input itself
+      if (target.closest('input[type="text"]')) {
+        return;
+      }
+      
       if (!target.closest('.search-bar-item')) {
         setShowSuggestions(false);
       }
@@ -80,55 +196,143 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Load more cars function
+  const loadMoreCars = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      let q;
+      if (lastDoc) {
+        q = query(
+          collection(db, 'cars'),
+          orderBy('createdAt', 'desc'),
+          startAfter(lastDoc),
+          limit(20)
+        );
+      } else {
+        q = query(collection(db, 'cars'), orderBy('createdAt', 'desc'), limit(20));
+      }
+
+      const snap = await getDocs(q);
+      const newCars = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      if (newCars.length < 20) {
+        setHasMore(false);
+      }
+
+      if (newCars.length > 0) {
+        setLastDoc(snap.docs[snap.docs.length - 1]);
+        setCars(prev => [...prev, ...newCars]);
+      }
+    } catch (error) {
+      console.error('Error loading more cars:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, hasMore, lastDoc]);
+
+  // Fetch initial cars with caching
   useEffect(() => {
     const fetchCars = async () => {
+      const now = Date.now();
+      
+      // Use cache if it's still valid
+      if (carsCache.length > 0 && (now - lastFetchTime) < CACHE_DURATION) {
+        setCars(carsCache);
+        setFiltered(carsCache);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
-      const q = query(collection(db, 'cars'), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
-      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setCars(data);
-      setFiltered(data);
-      setLoading(false);
+      try {
+        const q = query(collection(db, 'cars'), orderBy('createdAt', 'desc'), limit(20));
+        const snap = await getDocs(q);
+        const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Update cache
+        carsCache = data;
+        lastFetchTime = now;
+        
+        setCars(data);
+        setFiltered(data);
+        setLastDoc(snap.docs[snap.docs.length - 1]);
+        setHasMore(data.length === 20);
+      } catch (error) {
+        console.error('Error fetching cars:', error);
+        // Fallback to cache if available
+        if (carsCache.length > 0) {
+          setCars(carsCache);
+          setFiltered(carsCache);
+        }
+      } finally {
+        setLoading(false);
+      }
     };
     fetchCars();
   }, []);
 
-  const handleSort = (option: SortOption) => {
+  // Handle sort - memoized
+  const handleSort = useCallback((option: SortOption) => {
     setSortBy(current => current === option ? null : option);
-  };
+  }, []);
 
+  // Filter and sort cars - memoized
   useEffect(() => {
-    let result = cars;
-    
-    // Apply filters
+    let result = [...cars];
+
+    // Filter by brand
     if (marca) {
-      result = result.filter(car => 
-        car.marca?.toLowerCase().includes(marca.toLowerCase())
-      );
-    }
-    if (pretMin) result = result.filter(car => Number(car.pret) >= Number(pretMin));
-    if (pretMax) result = result.filter(car => Number(car.pret) <= Number(pretMax));
-    
-    // Apply sorting if selected
-    if (sortBy) {
-      result = [...result].sort((a, b) => {
-        const priceA = Number(a.pret);
-        const priceB = Number(b.pret);
-        return sortBy === 'price-asc' ? priceA - priceB : priceB - priceA;
+      result = result.filter(car => {
+        const carMarca = car.marca ? car.marca.toLowerCase() : '';
+        const searchMarca = marca.toLowerCase();
+        const matches = carMarca.includes(searchMarca);
+        return matches;
       });
     }
-    
-    setFiltered(result);
-  }, [marca, pretMin, pretMax, cars, sortBy]);
 
-  const handleReset = () => {
+    // Filter by price range
+    if (pretMin) {
+      result = result.filter(car => car.pret >= Number(pretMin));
+    }
+    if (pretMax) {
+      result = result.filter(car => car.pret <= Number(pretMax));
+    }
+
+    // Sort
+    if (sortBy) {
+      result.sort((a, b) => {
+        if (sortBy === 'price-asc') {
+          return a.pret - b.pret;
+        } else {
+          return b.pret - a.pret;
+        }
+      });
+    }
+
+    setFiltered(result);
+  }, [cars, marca, pretMin, pretMax, sortBy]);
+
+  // Handle reset - memoized
+  const handleReset = useCallback(() => {
     setMarca('');
     setSearchMarca('');
     setPretMin('');
     setPretMax('');
     setSortBy(null);
     setShowSuggestions(false);
-  };
+  }, []);
+
+  // Render car item for progressive list
+  const renderCarItem = useCallback((car: any, index: number) => (
+    <div className="col-12 col-md-6 col-lg-4">
+      <CarCard car={car} />
+    </div>
+  ), []);
+
+  // Key extractor for cars
+  const keyExtractor = useCallback((car: any, index: number) => car.id || `car-${index}`, []);
 
   return (
     <div className="page-wrapper">
@@ -153,6 +357,7 @@ export default function HomePage() {
               left: 0,
               zIndex: 0
             }}
+            loading="eager"
           />
         ) : (
           <div 
@@ -186,36 +391,71 @@ export default function HomePage() {
           ) : (
             <>
               <h1 className="display-4 fw-bold mb-4">{config?.nume || 'Anunțuri Auto'}</h1>
-              <p className="lead mb-0">{config?.slogan || 'Descoperă mașina perfectă pentru tine!'}</p>
+              {config?.sloganVanzari ? (
+                <p className="lead mb-0">{config.sloganVanzari}</p>
+              ) : config?.slogan ? (
+                <p className="lead mb-0">{config.slogan}</p>
+              ) : null}
 
               {/* Search Section */}
               <div className="search-container mt-4">
-                <div className="row g-3">
+                <div className="search-bar">
                   {/* Brand Search */}
-                  <div className="col-12 col-md-6 col-lg-3">
-                    <div className="position-relative search-bar-item">
-                      <label className="form-label text-white">Marcă</label>
+                  <div className="search-bar-item">
+                    <label className="form-label text-white">Marcă</label>
+                    <div className="position-relative">
                       <input
+                        ref={inputRef}
                         type="text"
                         className="form-control form-control-lg"
-                        placeholder="Caută marcă..."
+                        placeholder={loadingBrands ? "Se încarcă mărcile..." : "Caută marcă..."}
                         value={searchMarca}
                         onChange={handleBrandInputChange}
                         onFocus={() => {
                           setShowSuggestions(true);
-                          if (!searchMarca.trim()) {
-                            setFilteredMarci(allMarci);
-                          }
+                          // Show all brands when input is focused, regardless of current text
+                          setFilteredMarci(brands);
                         }}
+                        onClick={() => {
+                          setShowSuggestions(true);
+                          // Show all brands when input is clicked, regardless of current text
+                          setFilteredMarci(brands);
+                        }}
+                        disabled={loadingBrands}
                       />
-                      {showSuggestions && (
-                        <div className="brand-suggestions position-absolute w-100 bg-white shadow-sm rounded mt-1">
-                          <ul className="list-unstyled m-0 p-0">
-                            {filteredMarci.map((marca, index) => (
+                      
+                      {/* Simple dropdown instead of portal for testing */}
+                      {showSuggestions && filteredMarci.length > 0 && (
+                        <div 
+                          className="brand-suggestions"
+                          style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            zIndex: 2147483647,
+                            pointerEvents: 'auto'
+                          }}
+                        >
+                          <ul>
+                            {filteredMarci.slice(0, 10).map((marca, index) => (
                               <li
                                 key={index}
-                                onClick={() => handleBrandSelect(marca)}
-                                className="suggestion-item px-3 py-2 cursor-pointer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleBrandSelect(marca, e);
+                                }}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                }}
+                                className="suggestion-item"
+                                style={{ 
+                                  cursor: 'pointer', 
+                                  userSelect: 'none',
+                                  pointerEvents: 'auto',
+                                  zIndex: 2147483647
+                                }}
                               >
                                 {marca}
                               </li>
@@ -227,7 +467,7 @@ export default function HomePage() {
                   </div>
 
                   {/* Price Range */}
-                  <div className="col-12 col-sm-6 col-lg-3">
+                  <div className="search-bar-item">
                     <label className="form-label text-white">Preț minim</label>
                     <input
                       type="number"
@@ -238,7 +478,7 @@ export default function HomePage() {
                     />
                   </div>
 
-                  <div className="col-12 col-sm-6 col-lg-3">
+                  <div className="search-bar-item">
                     <label className="form-label text-white">Preț maxim</label>
                     <input
                       type="number"
@@ -250,7 +490,7 @@ export default function HomePage() {
                   </div>
 
                   {/* Reset Button */}
-                  <div className="col-12 col-lg-3">
+                  <div className="search-bar-item">
                     <label className="form-label text-white">&nbsp;</label>
                     <button
                       className="btn btn-danger btn-lg w-100"
@@ -269,7 +509,7 @@ export default function HomePage() {
       {/* Main Content */}
       <div className="main-container py-5">
         {/* Listings Container */}
-        <div className="listings-container">
+        <div className="container">
           <div className="listings-header mb-4">
             <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
               <h2 className="h3 mb-0 text-light">Anunțuri disponibile</h2>
@@ -292,21 +532,59 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Cars Grid */}
+          {/* Cars Grid with Progressive Loading */}
           {loading ? (
-            <div className="text-center py-5">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Se încarcă anunțurile...</span>
-              </div>
-            </div>
-          ) : filtered.length > 0 ? (
             <div className="row g-4">
-              {filtered.map((car) => (
-                <div key={car.id} className="col-12 col-sm-6 col-md-6 col-lg-4">
-                  <CarCard car={car} />
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="col-12 col-md-6 col-lg-4">
+                  <div className="card h-100 border-0 shadow-sm" style={{ backgroundColor: 'var(--gray-800)' }}>
+                    <div className="placeholder-glow">
+                      <div className="placeholder" style={{ height: '240px' }}></div>
+                      <div className="card-body">
+                        <div className="placeholder col-8 mb-2"></div>
+                        <div className="placeholder col-6"></div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
+          ) : filtered.length > 0 ? (
+            <>
+              <ProgressiveList
+                items={filtered}
+                renderItem={renderCarItem}
+                batchSize={6}
+                delay={200}
+                className="row g-4"
+                keyExtractor={keyExtractor}
+                placeholder={
+                  <div className="text-center py-5">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Se încarcă anunțurile...</span>
+                    </div>
+                  </div>
+                }
+              />
+              
+              {/* Load More Trigger */}
+              {hasMore && (
+                <div ref={loadMoreRef} className="text-center py-4 mt-4">
+                  {loadingMore ? (
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Se încarcă mai multe anunțuri...</span>
+                    </div>
+                  ) : (
+                    <button
+                      className="btn btn-outline-primary"
+                      onClick={loadMoreCars}
+                    >
+                      Încarcă mai multe anunțuri
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-5">
               <p className="text-muted mb-0">Nu am găsit anunțuri care să corespundă criteriilor tale.</p>
