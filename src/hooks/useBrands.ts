@@ -1,5 +1,10 @@
-import { useState, useEffect } from 'react';
-import { getBrands, addBrand, checkBrandExists, Brand } from '@/utils/apiBrands';
+import { useState, useEffect } from "react";
+import {
+  getBrands,
+  addBrand,
+  checkBrandExists as checkBrandExistsAPI,
+  Brand,
+} from "@/utils/apiBrands";
 
 export const useBrands = () => {
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -18,7 +23,12 @@ export const useBrands = () => {
       const brandsData = await getBrands();
       setBrands(brandsData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Eroare la încărcarea mărcilor');
+      console.error("Eroare la încărcarea mărcilor:", err);
+      setError(
+        err instanceof Error ? err.message : "Eroare la încărcarea mărcilor"
+      );
+      // Setează o listă goală pentru a evita blocarea
+      setBrands([]);
     } finally {
       setLoading(false);
     }
@@ -28,13 +38,16 @@ export const useBrands = () => {
     try {
       setError(null);
       const newBrand = await addBrand(brandName);
-      
+
       // Actualizează lista locală cu noua marcă
-      setBrands(prev => [...prev, newBrand].sort((a, b) => a.name.localeCompare(b.name)));
-      
+      setBrands((prev) =>
+        [...prev, newBrand].sort((a, b) => a.name.localeCompare(b.name))
+      );
+
       return newBrand;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Eroare la adăugarea mărcii';
+      const errorMessage =
+        err instanceof Error ? err.message : "Eroare la adăugarea mărcii";
       setError(errorMessage);
       throw err;
     }
@@ -42,9 +55,9 @@ export const useBrands = () => {
 
   const checkBrandExists = async (brandName: string): Promise<boolean> => {
     try {
-      return await checkBrandExists(brandName);
+      return await checkBrandExistsAPI(brandName);
     } catch (err) {
-      console.error('Eroare la verificarea mărcii:', err);
+      console.error("Eroare la verificarea mărcii:", err);
       return false;
     }
   };
@@ -59,6 +72,6 @@ export const useBrands = () => {
     error,
     addNewBrand,
     checkBrandExists,
-    refreshBrands
+    refreshBrands,
   };
-}; 
+};

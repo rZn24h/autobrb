@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useBrands } from '@/hooks/useBrands';
+import React, { useState } from "react";
+import { useBrands } from "@/hooks/useBrands";
 
 interface BrandSelectorProps {
   value: string;
@@ -12,69 +12,63 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({
   value,
   onChange,
   error,
-  disabled = false
+  disabled = false,
 }) => {
-  const { brands, loading, addNewBrand } = useBrands();
-  const [selectedOption, setSelectedOption] = useState<'existing' | 'new'>('existing');
-  const [newBrandName, setNewBrandName] = useState('');
-  const [brandError, setBrandError] = useState<string>('');
+  const { brands, loading, addNewBrand, error: brandsError } = useBrands();
+  const [selectedOption, setSelectedOption] = useState<"existing" | "new">(
+    "existing"
+  );
+  const [newBrandName, setNewBrandName] = useState("");
+  const [brandError, setBrandError] = useState<string>("");
 
-  // Actualizează valoarea când se schimbă selecția
-  useEffect(() => {
-    if (selectedOption === 'existing') {
-      onChange(value);
-    } else {
-      onChange(newBrandName);
-    }
-  }, [selectedOption, value, newBrandName, onChange]);
-
-  // Curăță erorile când se schimbă selecția
-  useEffect(() => {
-    setBrandError('');
-  }, [selectedOption]);
-
-  const handleExistingBrandChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleExistingBrandChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     const selectedValue = e.target.value;
     onChange(selectedValue);
+    setBrandError(""); // Curăță eroarea când utilizatorul face o selecție
   };
 
   const handleNewBrandChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const brandName = e.target.value;
     setNewBrandName(brandName);
     onChange(brandName);
-    setBrandError('');
+    setBrandError("");
   };
 
-  const handleOptionChange = (option: 'existing' | 'new') => {
+  const handleOptionChange = (option: "existing" | "new") => {
     setSelectedOption(option);
-    setBrandError('');
-    
-    if (option === 'existing') {
-      setNewBrandName('');
-      onChange(value || '');
+    setBrandError("");
+
+    if (option === "existing") {
+      setNewBrandName("");
+      // Nu apela onChange aici pentru a evita loop-ul
     } else {
+      // Pentru opțiunea nouă, setează valoarea curentă
       onChange(newBrandName);
     }
   };
 
   const handleAddNewBrand = async () => {
     if (!newBrandName.trim()) {
-      setBrandError('Introduceți numele mărcii');
+      setBrandError("Introduceți numele mărcii");
       return;
     }
 
     try {
       await addNewBrand(newBrandName.trim());
-      setNewBrandName('');
-      setSelectedOption('existing');
+      setNewBrandName("");
+      setSelectedOption("existing");
       onChange(newBrandName.trim());
     } catch (err) {
-      setBrandError(err instanceof Error ? err.message : 'Eroare la adăugarea mărcii');
+      setBrandError(
+        err instanceof Error ? err.message : "Eroare la adăugarea mărcii"
+      );
     }
   };
 
   const isFormValid = () => {
-    if (selectedOption === 'existing') {
+    if (selectedOption === "existing") {
       return !!value;
     } else {
       return !!newBrandName.trim();
@@ -82,8 +76,31 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({
   };
 
   const hasBothOptionsFilled = () => {
-    return selectedOption === 'existing' && value && newBrandName.trim();
+    return selectedOption === "existing" && value && newBrandName.trim();
   };
+
+  // Afișează un mesaj de eroare dacă încărcarea mărcilor a eșuat
+  if (brandsError && !loading) {
+    return (
+      <div className="brand-selector">
+        <div className="alert alert-warning">
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          Nu s-au putut încărca mărcile. Poți introduce manual numele mărcii.
+        </div>
+        <div className="mb-3">
+          <input
+            type="text"
+            className={`form-control ${error ? "is-invalid" : ""}`}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Introduceți numele mărcii..."
+            disabled={disabled}
+          />
+          {error && <div className="invalid-feedback d-block">{error}</div>}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="brand-selector">
@@ -95,8 +112,8 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({
             type="radio"
             id="existingBrand"
             name="brandOption"
-            checked={selectedOption === 'existing'}
-            onChange={() => handleOptionChange('existing')}
+            checked={selectedOption === "existing"}
+            onChange={() => handleOptionChange("existing")}
             disabled={disabled}
           />
           <label className="form-check-label" htmlFor="existingBrand">
@@ -109,8 +126,8 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({
             type="radio"
             id="newBrand"
             name="brandOption"
-            checked={selectedOption === 'new'}
-            onChange={() => handleOptionChange('new')}
+            checked={selectedOption === "new"}
+            onChange={() => handleOptionChange("new")}
             disabled={disabled}
           />
           <label className="form-check-label" htmlFor="newBrand">
@@ -120,10 +137,10 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({
       </div>
 
       {/* Dropdown pentru mărci existente */}
-      {selectedOption === 'existing' && (
+      {selectedOption === "existing" && (
         <div className="mb-3">
           <select
-            className={`form-select ${error || brandError ? 'is-invalid' : ''}`}
+            className={`form-select ${error || brandError ? "is-invalid" : ""}`}
             value={value}
             onChange={handleExistingBrandChange}
             disabled={disabled || loading}
@@ -140,12 +157,14 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({
       )}
 
       {/* Câmp text pentru marcă nouă */}
-      {selectedOption === 'new' && (
+      {selectedOption === "new" && (
         <div className="mb-3">
           <div className="input-group">
             <input
               type="text"
-              className={`form-control ${error || brandError ? 'is-invalid' : ''}`}
+              className={`form-control ${
+                error || brandError ? "is-invalid" : ""
+              }`}
               value={newBrandName}
               onChange={handleNewBrandChange}
               placeholder="Introduceți numele mărcii noi..."
@@ -165,8 +184,10 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({
 
       {/* Mesaje de eroare */}
       {error && <div className="invalid-feedback d-block">{error}</div>}
-      {brandError && <div className="invalid-feedback d-block">{brandError}</div>}
-      
+      {brandError && (
+        <div className="invalid-feedback d-block">{brandError}</div>
+      )}
+
       {/* Eroare pentru ambele opțiuni completate */}
       {hasBothOptionsFilled() && (
         <div className="alert alert-warning alert-sm mt-2">
@@ -177,10 +198,8 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({
 
       {/* Validare obligatorie */}
       {!isFormValid() && selectedOption && (
-        <div className="form-text text-danger">
-          Marca este obligatorie
-        </div>
+        <div className="form-text text-danger">Marca este obligatorie</div>
       )}
     </div>
   );
-}; 
+};
