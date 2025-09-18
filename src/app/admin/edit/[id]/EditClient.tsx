@@ -10,6 +10,7 @@ import AdminNavbar from '@/components/AdminNavbar';
 import { updateCar } from '@/utils/apiCars';
 import { processImage, isImageFile } from '@/utils/imageProcessing';
 import { BrandSelector } from '@/components/BrandSelector';
+import FacebookPostEmbed from '@/components/FacebookPostEmbed';
 
 interface CarData {
   id: string;
@@ -24,12 +25,16 @@ interface CarData {
   combustibil: string;
   capacitate: string;
   putere?: string;
+  tractiune?: string;
+  linkExtern?: string;
   descriere: string;
   dotari?: string;
   contact?: string;
   locatie?: string;
   images: string[];
   coverImage?: string;
+  facebookPostUrl?: string;
+  facebookEmbedCode?: string;
 }
 
 export default function EditClient({ carId }: { carId: string }) {
@@ -61,12 +66,16 @@ export default function EditClient({ carId }: { carId: string }) {
             combustibil: data.combustibil || '',
             capacitate: data.capacitate || '',
             putere: data.putere,
+            tractiune: data.tractiune,
+            linkExtern: data.linkExtern,
             descriere: data.descriere || '',
             dotari: data.dotari,
             contact: data.contact,
             locatie: data.locatie,
             images: data.images || [],
             coverImage: data.coverImage || data.images?.[0],
+            facebookPostUrl: data.facebookPostUrl,
+            facebookEmbedCode: data.facebookEmbedCode,
           });
         } else {
           setError('Anunțul nu a fost găsit');
@@ -89,6 +98,16 @@ export default function EditClient({ carId }: { carId: string }) {
   const handleBrandChange = (value: string) => {
     if (!car) return;
     setCar({ ...car, marca: value });
+  };
+
+  const handleFacebookUrlChange = (url: string) => {
+    if (!car) return;
+    setCar({ ...car, facebookPostUrl: url });
+  };
+
+  const handleFacebookEmbedCodeChange = (code: string) => {
+    if (!car) return;
+    setCar({ ...car, facebookEmbedCode: code });
   };
 
   const handleCoverImageChange = (imageUrl: string) => {
@@ -505,6 +524,44 @@ export default function EditClient({ carId }: { carId: string }) {
                         name="locatie"
                         value={car.locatie}
                         onChange={handleChange}
+                      />
+                    </div>
+
+                    <div className="col-12">
+                      <label className="form-label">Link extern (OLX/Autovit)</label>
+                      <input
+                        type="url"
+                        className="form-control"
+                        name="linkExtern"
+                        value={car.linkExtern}
+                        onChange={handleChange}
+                        placeholder="Ex: https://www.olx.ro/d/oferta/..."
+                      />
+                    </div>
+
+                    <div className="col-12">
+                      <label className="form-label">Tracțiune</label>
+                      <select
+                        className="form-select"
+                        name="tractiune"
+                        value={car.tractiune}
+                        onChange={handleChange}
+                      >
+                        <option value="">Alege tracțiunea...</option>
+                        <option value="4x4">4x4</option>
+                        <option value="Față">Față</option>
+                        <option value="Spate">Spate</option>
+                      </select>
+                    </div>
+
+                    {/* Facebook Post Integration */}
+                    <div className="col-12">
+                      <FacebookPostEmbed
+                        facebookPostUrl={car.facebookPostUrl}
+                        facebookEmbedCode={car.facebookEmbedCode}
+                        onUrlChange={handleFacebookUrlChange}
+                        onEmbedCodeChange={handleFacebookEmbedCodeChange}
+                        disabled={saving}
                       />
                     </div>
 

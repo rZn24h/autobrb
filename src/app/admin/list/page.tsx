@@ -21,6 +21,8 @@ interface CarData {
   combustibil: string;
   images?: string[];
   coverImage?: string;
+  facebookPostUrl?: string;
+  facebookEmbedCode?: string;
   createdAt: {
     toDate: () => Date;
   };
@@ -171,6 +173,12 @@ export default function ListCarsPage() {
                     <h5 className="card-title fw-bold mb-3 text-light">
                       {car.marca} {car.model}
                       <span className="text-light opacity-75 ms-2">{car.an}</span>
+                      {(car.facebookPostUrl || car.facebookEmbedCode) && (
+                        <span className="badge bg-primary ms-2" title="Are postare Facebook integrată">
+                          <i className="fab fa-facebook me-1"></i>
+                          FB
+                        </span>
+                      )}
                     </h5>
                     
                     <div className="mb-3">

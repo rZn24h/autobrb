@@ -27,6 +27,8 @@ interface CarDetails {
   coverImage?: string;
   contact?: string;
   locatie?: string;
+  facebookPostUrl?: string;
+  facebookEmbedCode?: string;
 }
 
 export default function CarClient({ car }: { car: CarDetails }) {
@@ -377,6 +379,41 @@ export default function CarClient({ car }: { car: CarDetails }) {
                     <i className="bi bi-box-arrow-up-right me-2"></i>
                     Vezi anunțul și pe OLX/Autovit
                   </a>
+                </div>
+              </div>
+            )}
+
+            {/* Facebook Post Integration */}
+            {(car.facebookPostUrl || car.facebookEmbedCode) && (
+              <div className="card border-0 shadow-sm" style={{ backgroundColor: 'var(--gray-900)', border: '1px solid var(--gray-800)' }}>
+                <div className="card-header bg-transparent border-0 pb-0">
+                  <h6 className="text-light mb-0">
+                    <i className="fab fa-facebook text-primary me-2"></i>
+                    Postare Facebook
+                  </h6>
+                </div>
+                <div className="card-body p-3 p-md-4">
+                  {car.facebookEmbedCode ? (
+                    <div 
+                      dangerouslySetInnerHTML={{ __html: car.facebookEmbedCode }}
+                      style={{ maxWidth: '100%', overflow: 'hidden' }}
+                    />
+                  ) : car.facebookPostUrl ? (
+                    <div className="text-center py-3">
+                      <p className="text-muted mb-3">
+                        Postarea Facebook este disponibilă pentru vizualizare
+                      </p>
+                      <a 
+                        href={car.facebookPostUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="btn btn-primary"
+                      >
+                        <i className="fab fa-facebook me-2"></i>
+                        Vezi postarea pe Facebook
+                      </a>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             )}
