@@ -100,7 +100,7 @@ export default function FacebookPostsPage() {
               </a>
             </div>
           ) : (
-            <div className="row">
+            <div className="row justify-content-center">
               {posts.map((post) => (
                 <FacebookPostCard key={post.id} post={post} />
               ))}

@@ -38,8 +38,11 @@ const FacebookPostCard: React.FC<FacebookPostCardProps> = ({ post }) => {
   }
 
   return (
-    <div className="col-lg-6 col-xl-4 mb-4">
-      <div className="card h-100 shadow-sm">
+    <div className="col-12 col-md-6 col-lg-5 col-xl-4 mb-4 d-flex justify-content-center">
+      <div
+        className="card h-100 shadow-sm"
+        style={{ maxWidth: "500px", width: "100%" }}
+      >
         <div className="card-header bg-primary text-white">
           <h6 className="mb-0">
             <i className="bi bi-facebook me-2"></i>
@@ -51,7 +54,7 @@ const FacebookPostCard: React.FC<FacebookPostCardProps> = ({ post }) => {
           <div
             dangerouslySetInnerHTML={{ __html: post.iframeCode }}
             style={{
-              maxHeight: "400px",
+              maxHeight: "500px",
               overflow: "hidden",
             }}
           />
