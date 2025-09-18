@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
-import { useConfig } from '@/hooks/useConfig';
-import { useAuth } from '@/contexts/AuthContext';
-import { useAdmin } from '@/hooks/useAdmin';
+import React from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { useConfig } from "@/hooks/useConfig";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAdmin } from "@/hooks/useAdmin";
 
 const Navbar: React.FC = () => {
   const pathname = usePathname();
@@ -14,22 +14,28 @@ const Navbar: React.FC = () => {
   const { isAdmin, loading: adminLoading } = useAdmin();
 
   return (
-    <nav className="navbar navbar-expand-lg fixed-top shadow-sm" style={{ backgroundColor: 'var(--gray-900)' }}>
+    <nav
+      className="navbar navbar-expand-lg fixed-top shadow-sm"
+      style={{ backgroundColor: "var(--gray-900)" }}
+    >
       <div className="container">
         {/* Logo */}
         <Link href="/" className="navbar-brand d-flex align-items-center">
           {loading ? (
-            <div className="spinner-border spinner-border-sm text-light" role="status">
+            <div
+              className="spinner-border spinner-border-sm text-light"
+              role="status"
+            >
               <span className="visually-hidden">Se încarcă...</span>
             </div>
           ) : config?.logoUrl ? (
             <img
               src={config.logoUrl}
-              alt={config.nume || 'Logo'}
+              alt={config.nume || "Logo"}
               style={{
-                width: 'auto',
-                height: '40px',
-                objectFit: 'contain'
+                width: "auto",
+                height: "40px",
+                objectFit: "contain",
               }}
               className="d-inline-block align-top"
             />
@@ -49,7 +55,7 @@ const Navbar: React.FC = () => {
           aria-controls="navbarNav"
           aria-expanded="false"
           aria-label="Toggle navigation"
-          style={{ color: '#ffffff' }}
+          style={{ color: "#ffffff" }}
         >
           <span className="navbar-toggler-icon"></span>
         </button>
@@ -58,31 +64,53 @@ const Navbar: React.FC = () => {
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto align-items-center">
             <li className="nav-item">
-              <Link 
-                href="/" 
-                className={`nav-link px-3 py-2 ${pathname === '/' ? 'active fw-bold text-danger' : 'text-light'}`}
-                style={{ transition: 'color 0.3s ease' }}
+              <Link
+                href="/"
+                className={`nav-link px-3 py-2 ${
+                  pathname === "/" ? "active fw-bold text-danger" : "text-light"
+                }`}
+                style={{ transition: "color 0.3s ease" }}
               >
                 Acasă
               </Link>
             </li>
             <li className="nav-item">
-              <Link 
-                href="/contact" 
-                className={`nav-link px-3 py-2 ${pathname === '/contact' ? 'active fw-bold text-danger' : 'text-light'}`}
-                style={{ transition: 'color 0.3s ease' }}
+              <Link
+                href="/facebook-posts"
+                className={`nav-link px-3 py-2 ${
+                  pathname === "/facebook-posts"
+                    ? "active fw-bold text-danger"
+                    : "text-light"
+                }`}
+                style={{ transition: "color 0.3s ease" }}
+              >
+                <i className="bi bi-facebook me-1"></i>
+                Facebook
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link
+                href="/contact"
+                className={`nav-link px-3 py-2 ${
+                  pathname === "/contact"
+                    ? "active fw-bold text-danger"
+                    : "text-light"
+                }`}
+                style={{ transition: "color 0.3s ease" }}
               >
                 Contact
               </Link>
             </li>
             {user && isAdmin && !adminLoading && (
               <li className="nav-item">
-                <Link 
-                  href="/admin/dashboard" 
+                <Link
+                  href="/admin/dashboard"
                   className={`nav-link px-3 py-2 d-flex align-items-center ${
-                    pathname.startsWith('/admin') ? 'active fw-bold text-danger' : 'text-light'
+                    pathname.startsWith("/admin")
+                      ? "active fw-bold text-danger"
+                      : "text-light"
                   }`}
-                  style={{ transition: 'color 0.3s ease' }}
+                  style={{ transition: "color 0.3s ease" }}
                 >
                   <i className="bi bi-gear-fill me-2"></i>
                   <span>Admin</span>
